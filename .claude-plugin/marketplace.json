@@ -1,0 +1,39 @@
+{
+  "name": "cybersecurity-skills",
+  "owner": {
+    "name": "Masriyan"
+  },
+  "description": "15 cybersecurity skills for Claude Code covering offensive security, defensive operations, reverse engineering, threat hunting, CSOC automation, and incident response.",
+  "license": "MIT",
+  "homepage": "https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill",
+  "repository": "https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill",
+  "plugins": [
+    {
+      "name": "cybersecurity",
+      "source": "./",
+      "version": "1.0.0",
+      "description": "Complete cybersecurity skill bundle: reconnaissance, vulnerability scanning, exploit development, reverse engineering, malware analysis, threat hunting, incident response, network/web/cloud security, CSOC automation, log analysis, crypto analysis, red team ops, blue team defense.",
+      "author": {
+        "name": "Masriyan"
+      },
+      "license": "MIT",
+      "skills": [
+        "./skills/01-recon-osint",
+        "./skills/02-vulnerability-scanner",
+        "./skills/03-exploit-development",
+        "./skills/04-reverse-engineering",
+        "./skills/05-malware-analysis",
+        "./skills/06-threat-hunting",
+        "./skills/07-incident-response",
+        "./skills/08-network-security",
+        "./skills/09-web-security",
+        "./skills/10-cloud-security",
+        "./skills/11-csoc-automation",
+        "./skills/12-log-analysis",
+        "./skills/13-crypto-analysis",
+        "./skills/14-red-team-ops",
+        "./skills/15-blue-team-defense"
+      ]
+    }
+  ]
+}
