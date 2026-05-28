@@ -1,9 +1,46 @@
-# 📝 Changelog
+# Changelog
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [2.0.0] — 2025-05-28
+
+### Major Overhaul — Complete Rebuild for Claude Code
+
+Ground-up rebuild of all 15 skills, optimized specifically for how Claude Code reads and executes skill instructions.
+
+#### Added
+- **Activation Triggers** section in every SKILL.md — explicit phrases/contexts that activate each skill
+- **Authorization Gates** in Skills 03 and 14 — mandatory authorization verification before any operational assistance
+- **Output Templates** — exact formats Claude uses for reports, rules, and artifacts
+- **SIEM Query Library** — ready-to-run Splunk SPL, Sentinel KQL, Elastic EQL queries in Skills 06, 11, 12
+- **Sigma Rule Templates** — complete, deployable Sigma rules in Skills 06, 12, 15
+- **Suricata/Snort Rule Templates** — complete IDS rules in Skills 08, 15
+- **YARA Rule Templates** — three-tier YARA structure (hash/family/network) in Skills 05, 15
+- **Post-Quantum Cryptography** — NIST PQC 2024 finalized standards (ML-KEM, ML-DSA) in Skill 13
+- **Kubernetes Security** — complete K8s RBAC, pod security, network policy guidance in Skill 10
+- **AD Attack Methodology** — BloodHound workflow and Kerberoasting guide in Skill 14
+- **Linux Hardening Commands** — SSH, sysctl, iptables, auditd, AIDE commands in Skill 15
+- **Windows Hardening Commands** — CIS Level 1 PowerShell, Sysmon deployment, audit policy in Skill 15
+- **Detection Engineering Workflow** — end-to-end detection rule development in Skill 15
+- **Zero Trust Assessment Checklist** — architecture review framework in Skill 15
+- **`.gitignore`** — excludes `__pycache__`, `.env`, keys, and generated output files
+
+#### Changed
+- **Skill 15 (Blue Team Defense)** — complete rewrite from 1-page stub to 400+ line hardening reference
+- **All SKILL.md versions** — bumped from 1.0.0 to 2.0.0
+- **README.md** — rewritten with accurate Claude Code skill information and v2.0 feature list
+- **Skills 03 and 14** — authorization gate is now the first workflow step, not a footer warning
+- **Python version requirement** — updated from 3.8+ to 3.10+
+
+#### Fixed
+- Removed misleading claim that skills are "automatically discovered"
+- Skill integration tables standardized across all 15 skills
+- Consistent authorization language across all offensive skills
 
 ---
 
