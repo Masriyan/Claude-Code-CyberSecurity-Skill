@@ -1,4 +1,6 @@
 <p align="center">
+<img src="assets/banner.png" alt="Claude Code Cyber Security Skills" width="100%">
+  
   <img src="https://img.shields.io/badge/Claude%20Code-CyberSecurity%20Skills-red?style=for-the-badge" alt="Claude Code CyberSecurity Skills"/>
   <br/>
   <img src="https://img.shields.io/badge/Skills-15-blue?style=flat-square" alt="Skills"/>
