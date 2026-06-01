@@ -10,6 +10,16 @@
   <img src="https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=flat-square" alt="Platform"/>
 </p>
 
+## Star History
+
+<a href="https://www.star-history.com/?repos=Masriyan%2FClaude-Code-CyberSecurity-Skill&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Masriyan/Claude-Code-CyberSecurity-Skill&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Masriyan/Claude-Code-CyberSecurity-Skill&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Masriyan/Claude-Code-CyberSecurity-Skill&type=date&legend=top-left" />
+ </picture>
+</a>
+
 # Claude Code CyberSecurity Skill Collection
 
 > **15 production-quality Claude Code Skills for cybersecurity professionals** — covering offensive security, defensive operations, reverse engineering, threat hunting, CSOC automation, and more. Version 2.0 — rebuilt from the ground up for Claude Code.
