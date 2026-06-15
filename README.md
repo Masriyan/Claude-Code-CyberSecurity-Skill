@@ -231,7 +231,7 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+AGPLv3 Section 7(b) — see [LICENSE](LICENSE) for details.
 
 ---
 
