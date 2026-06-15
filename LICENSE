@@ -1,21 +1,81 @@
-MIT License
+=======================================
+ADDITIONAL TERMS UNDER AGPLv3 SECTION 7
+=======================================
 
-Copyright (c) 2024 Masriyan
+Project: Claude-Code-CyberSecurity-Skill
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Copyright (C) 2026 Masriyan
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Original Repository:
+https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Pursuant to Section 7 of the GNU Affero General Public License v3,
+the following additional terms apply to this work:
+
+1. PRESERVATION OF ATTRIBUTION
+
+Any redistribution, modification, fork, mirror, re-upload, derivative
+work, or public distribution of this project, in whole or in part,
+must preserve the following attribution information:
+
+```
+Original Author: Masriyan
+Original Repository:
+https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill
+```
+
+2. REPOSITORY ATTRIBUTION REQUIREMENT
+
+If this project or a modified version is publicly distributed through
+GitHub, GitLab, Codeberg, Gitea, Bitbucket, self-hosted repositories,
+or any similar source code hosting platform, the attribution above
+must remain clearly visible in at least one of the following:
+
+```
+- README file
+- LICENSE file
+- NOTICE file
+- Repository description
+- Project documentation
+```
+
+3. MODIFIED VERSION NOTICE
+
+Modified versions must include a clear notice stating:
+
+```
+"This project is derived from
+Claude-Code-CyberSecurity-Skill by Masriyan."
+```
+
+and must provide a reference to the original repository.
+
+4. NO MISREPRESENTATION
+
+Redistributors and contributors may not falsely claim authorship of
+the original project or represent modified versions as the original
+work.
+
+5. PRESERVATION OF COPYRIGHT NOTICE
+
+The following copyright notice must not be removed:
+
+```
+Copyright (C) 2026 Masriyan
+```
+
+6. ACCEPTABLE ATTRIBUTION FORMAT
+
+A compliant attribution example is:
+
+```
+Based on Claude-Code-CyberSecurity-Skill
+by Masriyan
+
+Original Repository:
+https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill
+```
+
+These additional terms are intended to operate under AGPLv3 Section 7(b)
+and Section 7(c), requiring preservation of author attribution and
+prohibiting misrepresentation of the origin of the work.
