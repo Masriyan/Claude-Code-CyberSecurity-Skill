@@ -1,7 +1,7 @@
 ---
 name: Log Analysis & SIEM Integration
 description: Security log parsing, anomaly detection, SIEM query building, Sigma rule creation, and correlation rule development across Splunk, Elastic, QRadar, and Microsoft Sentinel
-version: 2.0.0
+version: 3.0.0
 author: Masriyan
 tags: [cybersecurity, log-analysis, siem, splunk, elastic, sentinel, sigma, anomaly-detection, correlation]
 ---
@@ -419,3 +419,18 @@ python scripts/anomaly_detector.py --logs parsed.json --baseline baseline.json -
 - [Windows Security Audit Policy](https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/)
 - [OCSF Schema](https://schema.ocsf.io/)
 - [SANS Windows Logging Cheat Sheet](https://www.malwarearchaeology.com/cheat-sheets)
+
+
+---
+
+## v3.0 Enhancements (2026 Update)
+
+**Normalized, testable detection content:**
+
+- **OCSF / ECS normalization** — map sources to the Open Cybersecurity Schema Framework (or Elastic Common Schema) so one detection works across feeds; state the schema in each rule.
+- **Sigma correlation rules** — use Sigma's correlation extension (count/temporal/value-count) for multi-event detections (e.g., brute force → success, low-and-slow exfil), not just single-event matches.
+- **Detection-as-code CI** — every rule has unit tests with positive/negative sample events; rules are linted and converted per-backend (`sigma convert`) in CI before deployment.
+- **UEBA & identity analytics** — baseline per-user/host behavior; alert on deviation (new admin action, abnormal data volume, impossible travel) rather than fixed thresholds.
+- **Platform currency** — examples for Splunk (`tstats`/data models), Microsoft Sentinel (KQL, ASIM functions), and Elastic (ES|QL/EQL).
+
+**Precision rule:** each rule documents data source + schema, false-positive conditions, ATT&CK mapping, and a tested sample event.

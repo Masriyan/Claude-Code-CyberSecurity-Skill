@@ -1,7 +1,7 @@
 ---
 name: Reconnaissance & OSINT Automation
 description: Passive and active reconnaissance, subdomain enumeration, DNS analysis, technology fingerprinting, and OSINT data correlation for authorized security assessments
-version: 2.0.0
+version: 3.0.0
 author: Masriyan
 tags: [cybersecurity, reconnaissance, osint, enumeration, dns, subdomain, fingerprinting]
 ---
@@ -274,3 +274,23 @@ python scripts/tech_fingerprint.py --urls urls.txt --output tech_report.json
 - [Shodan Search Engine](https://www.shodan.io/)
 - [DNSDumpster](https://dnsdumpster.com/)
 - [Google Hacking Database (GHDB)](https://www.exploit-db.com/google-hacking-database)
+
+
+---
+
+## v3.0 Enhancements (2026 Update)
+
+**Sharper, more current recon tradecraft:**
+
+- **Subdomain takeover detection** — for every discovered subdomain with a dangling `CNAME` (pointing to an unclaimed S3/Azure/GitHub Pages/Heroku/Fastly target), flag it as a takeover candidate and identify the fingerprint of the orphaned service.
+- **Cloud asset discovery** — enumerate public S3/GCS/Azure Blob buckets and storage by permutation of the org name; check for listable/world-readable buckets (use `cloud_enum`-style logic). Map ASN → CIDR → cloud-provider attribution.
+- **JA4+ / favicon hashing** — pivot on favicon `mmh3` hashes and JARM/JA4S server fingerprints in Shodan/Censys to find sibling infrastructure behind CDNs.
+- **GraphQL & API recon** — probe `/graphql` for introspection; harvest schema, types, and mutations to feed Skill 09.
+- **Breach & credential intel** — correlate discovered email formats against HaveIBeenPwned and public combolists (passive only) to prioritize accounts.
+- **Source-code & CI leaks** — extend dorking to GitHub Actions logs, npm/PyPI package metadata, and `*.map` source maps that leak internal paths.
+
+**Precision rule:** always separate *confirmed* assets (resolved + responding) from *candidate* assets (CT-log only) in output, and tag the discovery source per asset so findings are reproducible.
+
+### Added references
+- [can-i-take-over-xyz — subdomain takeover fingerprints](https://github.com/EdOverflow/can-i-take-over-xyz)
+- [JA4+ network fingerprinting](https://github.com/FoxIO-LLC/ja4)

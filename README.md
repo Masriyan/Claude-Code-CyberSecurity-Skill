@@ -3,8 +3,8 @@
   
   <img src="https://img.shields.io/badge/Claude%20Code-CyberSecurity%20Skills-red?style=for-the-badge" alt="Claude Code CyberSecurity Skills"/>
   <br/>
-  <img src="https://img.shields.io/badge/Skills-15-blue?style=flat-square" alt="Skills"/>
-  <img src="https://img.shields.io/badge/Version-2.0.0-orange?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/Skills-19-blue?style=flat-square" alt="Skills"/>
+  <img src="https://img.shields.io/badge/Version-3.0.0-orange?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"/>
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python"/>
   <img src="https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=flat-square" alt="Platform"/>
@@ -22,7 +22,7 @@
 
 # Claude Code CyberSecurity Skill Collection
 
-> **15 production-quality Claude Code Skills for cybersecurity professionals** — covering offensive security, defensive operations, reverse engineering, threat hunting, CSOC automation, and more. Version 2.0 — rebuilt from the ground up for Claude Code.
+> **19 production-quality Claude Code Skills for cybersecurity professionals** — covering offensive security, defensive operations, reverse engineering, threat hunting, CSOC automation, AI/LLM security, mobile, OT/ICS, GRC, and more. Version 3.0 — expanded coverage, sharper methodology, and stronger automation.
 
 Transform Claude Code into your ultimate cybersecurity co-pilot. Each skill provides Claude with structured methodology, decision frameworks, ready-to-run commands, and output templates that enable precise, expert-level assistance for real-world security operations.
 
@@ -74,6 +74,10 @@ These skills are built around what **Claude does natively** in Claude Code:
 | 13 | [Cryptographic Analysis](skills/13-crypto-analysis/) | Cryptography | TLS auditing, cipher analysis, hash identification, crypto code review, PQC guidance |
 | 14 | [Red Team Operations](skills/14-red-team-ops/) | Red Team | Engagement planning, C2 design, AD attacks, OPSEC, social engineering, reporting |
 | 15 | [Blue Team Defense](skills/15-blue-team-defense/) | Blue Team | Linux/Windows hardening, detection engineering, baselines, patch management |
+| 16 | [AI & LLM Security](skills/16-ai-llm-security/) | AI Security | Prompt injection, OWASP LLM Top 10, RAG & agent/tool-use security, model supply chain, AI red teaming |
+| 17 | [Mobile Security](skills/17-mobile-security/) | Mobile | Android/iOS testing, MASVS/MASTG, APK/IPA static analysis, Frida/objection, mobile malware triage |
+| 18 | [OT / ICS / SCADA Security](skills/18-ot-ics-security/) | Industrial | Purdue model, Modbus/DNP3/S7 analysis, IEC 62443, ATT&CK for ICS, safety-first methodology |
+| 19 | [GRC & Compliance](skills/19-grc-compliance/) | Governance | Risk scoring, NIST CSF 2.0/ISO 27001/SOC 2 mapping, gap analysis, audit evidence, policy generation |
 
 ---
 
@@ -136,6 +140,18 @@ claude
 
 # Incident Response (Skill 07 activates)  
 > Create a ransomware incident response playbook for our SOC team
+
+# AI/LLM Security (Skill 16 activates)
+> Threat-model this RAG chatbot against the OWASP LLM Top 10 and test it for prompt injection
+
+# Mobile Security (Skill 17 activates)
+> Analyze this APK for exported components and hardcoded secrets against OWASP MASVS
+
+# OT/ICS Security (Skill 18 activates)
+> From this capture, which hosts are sending Modbus write commands to the PLCs?
+
+# GRC & Compliance (Skill 19 activates)
+> Run a SOC 2 gap analysis and map our controls to NIST CSF 2.0
 ```
 
 You can also **explicitly name a skill**:
@@ -147,20 +163,18 @@ You can also **explicitly name a skill**:
 
 ---
 
-## What's New in v2.0
+## What's New in v3.0
 
-**Major overhaul — everything rebuilt for Claude Code:**
+**Bigger, sharper, more powerful — four new domains and a full refresh of the original 15:**
 
-- **Activation Triggers** — Every skill now lists explicit phrases that should invoke it
-- **Claude-native methodology** — Skills describe what Claude does directly, not just script usage
-- **Output templates** — Exact formats for reports, rules, and artifacts (no more vague instructions)
-- **Built-in authorization gates** — Offensive skills (03, 14) require authorization confirmation before proceeding
-- **Skill 15 completely rebuilt** — Blue Team Defense expanded from 1 page to a full hardening reference
-- **SIEM query library** — Skills 06, 11, 12 now include ready-to-run Splunk/Sentinel/Elastic queries
-- **Detection rule templates** — Complete Sigma, Suricata, and YARA templates throughout
-- **Post-quantum cryptography** — Skill 13 updated with NIST PQC 2024 standards
-- **Kubernetes security** — Complete K8s hardening in Skill 10
-- **`.gitignore`** — Added to exclude `__pycache__` and generated artifacts
+- **4 new skills (16–19)** — AI & LLM Security, Mobile Security, OT/ICS/SCADA Security, and GRC & Compliance, each with full methodology, output templates, and runnable scripts
+- **AI/LLM Security** — OWASP LLM Top 10 (2025) + MITRE ATLAS, prompt-injection test harness, RAG/agent/tool-use review, and a model supply-chain (`pickle`) scanner
+- **Mobile Security** — OWASP MASVS/MASTG, automated APK static triage (manifest, exported components, secret scanning), Frida/objection workflows
+- **OT/ICS/SCADA** — Purdue-model review, passive industrial-protocol analysis (Modbus/DNP3/S7), ATT&CK for ICS, and IEC 62443 alignment with a safety-first gate
+- **GRC & Compliance** — risk register scoring (qualitative + ALE), cross-framework control crosswalk (NIST CSF 2.0 ↔ ISO 27001 ↔ SOC 2 ↔ 800-53 ↔ CIS v8), gap analysis, and policy generation
+- **"v3.0 Enhancements (2026 Update)"** section added to every original skill — current tradecraft (JA4+, CVSS 4.0 + EPSS + CISA KEV, finalized FIPS 203/204/205 PQC, AD CS ESC1–ESC14, OCSF detection-as-code, cloud attack-path thinking, and more)
+- **Stronger scripts** — the red-team engagement planner is now ATT&CK-aligned with Markdown export; the hardening checker doubled its checks (sysctl, SSH crypto, kernel modules) and adds remediation hints; a latent permission-handling bug was fixed
+- **Built-in authorization & safety gates** — offensive (03, 14) and high-risk (16, 18) skills require explicit authorization/safety confirmation before proceeding
 
 ---
 
@@ -192,7 +206,11 @@ Claude-Code-CyberSecurity-Skill/
     ├── 12-log-analysis/          SKILL.md + scripts/ + examples/
     ├── 13-crypto-analysis/       SKILL.md + scripts/ + examples/
     ├── 14-red-team-ops/          SKILL.md + scripts/ + examples/
-    └── 15-blue-team-defense/     SKILL.md + scripts/ + examples/
+    ├── 15-blue-team-defense/     SKILL.md + scripts/ + examples/
+    ├── 16-ai-llm-security/       SKILL.md + scripts/ + examples/
+    ├── 17-mobile-security/       SKILL.md + scripts/ + examples/
+    ├── 18-ot-ics-security/       SKILL.md + scripts/ + examples/
+    └── 19-grc-compliance/        SKILL.md + scripts/ + examples/
 ```
 
 ---
@@ -216,6 +234,9 @@ Claude-Code-CyberSecurity-Skill/
 - **Trivy** — Container and IaC scanning (Skill 10)
 - **Checkov / tfsec** — Terraform security (Skill 10)
 - **Sigma CLI** — Rule conversion between SIEM platforms (Skills 06, 12, 15)
+- **garak / promptfoo** — LLM vulnerability scanning and red-team evaluation (Skill 16)
+- **apktool / jadx / Frida / objection** — Mobile app reversing and instrumentation (Skill 17)
+- **tshark with ICS dissectors** — Modbus/DNP3/S7 protocol analysis (Skill 18)
 
 ---
 

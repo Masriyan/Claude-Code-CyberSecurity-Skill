@@ -1,7 +1,7 @@
 ---
 name: CSOC Operations & Playbook Automation
 description: SOC alert triage, incident playbook automation, escalation workflows, shift reporting, and SOC KPI tracking
-version: 2.0.0
+version: 3.0.0
 author: Masriyan
 tags: [cybersecurity, csoc, soc, automation, playbook, triage, alert, operations, siem]
 ---
@@ -446,3 +446,18 @@ python scripts/report_generator.py --metrics monthly --date 2025-05 --output met
 - [Palo Alto XSOAR Documentation](https://docs.paloaltonetworks.com/cortex/cortex-xsoar)
 - [TheHive Project](https://thehive-project.org/)
 - [SOC Maturity Model (SOC-CMM)](https://www.soc-cmm.com/)
+
+
+---
+
+## v3.0 Enhancements (2026 Update)
+
+**AI-augmented, metrics-driven SOC:**
+
+- **AI-assisted triage** — use the LLM to summarize alerts, cluster duplicates, enrich with threat intel, and draft the analyst's first-pass disposition — with a human-in-the-loop gate before any containment action (see Skill 16 for safe agent design).
+- **Detection-as-code & SOAR** — playbooks and detections in version control with tests; automated enrichment (WHOIS, VT, GeoIP, asset/identity context) before a human sees the ticket.
+- **Alert tuning loop** — track false-positive rate per rule; auto-propose suppression/tuning when FP rate exceeds threshold to fight alert fatigue.
+- **MITRE D3FEND** — map each playbook's containment/eradication steps to D3FEND countermeasures, complementing ATT&CK coverage.
+- **Metrics** — report MTTD, MTTA, MTTR, dwell time, and detection coverage by ATT&CK tactic; trend them across shifts.
+
+**Precision rule:** every automated action is logged, reversible where possible, and gated by severity; irreversible actions require explicit human approval.

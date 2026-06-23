@@ -1,7 +1,7 @@
 ---
 name: Blue Team Defense & Hardening
 description: System hardening, detection engineering, security baseline monitoring, patch management, defense-in-depth architecture, and security posture improvement
-version: 2.0.0
+version: 3.0.0
 author: Masriyan
 tags: [cybersecurity, blue-team, defense, hardening, detection, baseline, siem, endpoint, cis]
 ---
@@ -738,3 +738,19 @@ python scripts/hardening_checker.py --os windows --cis-level 1 --output report.j
 - [SANS Critical Security Controls](https://www.sans.org/critical-security-controls/)
 - [Lynis Hardening Tool](https://cisofy.com/lynis/)
 - [The Linux Hardening Guide](https://madaidans-insecurities.github.io/guides/linux-hardening.html)
+
+
+---
+
+## v3.0 Enhancements (2026 Update)
+
+**Detection-as-code and modern baselines:**
+
+- **Current OS baselines** — Windows 11 / Server 2025 and recent Linux CIS benchmarks; enforce LAPS (Windows LAPS), Credential Guard, and Attack Surface Reduction (ASR) rules.
+- **Telemetry that matters** — deploy a maintained Sysmon config (SwiftOnSecurity/Olaf base), enable PowerShell script-block + module logging, command-line auditing, and ship to the SIEM; on Linux use auditd + eBPF (Falco/Tetragon).
+- **Detection-as-code** — manage Sigma detections in git with tests and CI conversion to the target SIEM; track ATT&CK coverage as a measurable metric (DeTT&CT-style).
+- **Identity hardening** — phishing-resistant MFA (FIDO2/passkeys), conditional access, and tiered admin (PAW) to counter token theft and AD escalation.
+- **Zero Trust maturity** — assess against CISA's Zero Trust Maturity Model pillars (identity, device, network, app, data) and report a maturity score per pillar.
+- **Cloud & container hardening** — extend baselines to cloud workloads and Kubernetes (ties to Skill 10); validate with the included checker and CSPM.
+
+**Precision rule:** every recommendation pairs the hardening change with the detection that proves it (or catches its bypass).

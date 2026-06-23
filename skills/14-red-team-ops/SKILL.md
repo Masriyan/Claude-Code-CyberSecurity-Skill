@@ -1,7 +1,7 @@
 ---
 name: Red Team Operations & Engagement Planning
 description: Authorized red team engagement planning, C2 architecture design, attack methodology, lateral movement strategy, OPSEC, and professional reporting
-version: 2.0.0
+version: 3.0.0
 author: Masriyan
 tags: [cybersecurity, red-team, c2, lateral-movement, persistence, pentest, engagement, opsec]
 ---
@@ -411,3 +411,20 @@ python scripts/engagement_planner.py --scope scope.json --output plan.md
 - [Red Team Field Manual (RTFM)](https://leanpub.com/rtfm-red-team-field-manual)
 - [PTES Technical Guidelines](http://www.pentest-standard.org/)
 - [Cobalt Strike Documentation](https://hstechdocs.helpsystems.com/manuals/cobaltstrike/)
+
+
+---
+
+## v3.0 Enhancements (2026 Update)
+
+> **Authorization gate still applies** — signed scope, RoE, and de-confliction contacts before any operational step.
+
+**Current offensive tradecraft (for authorized engagements):**
+
+- **AD/ADCS abuse** — BloodHound Community Edition for path-finding; AD CS escalation (ESC1–ESC14 family) and Kerberos relay/coercion (PetitPotam-style) where in scope.
+- **EDR evasion** — assume modern EDR/XDR; plan for in-memory execution, BYOVD considerations, and call-stack/telemetry-aware tradecraft — while always providing detection artifacts for the blue team debrief.
+- **Identity & cloud red teaming** — device-code and consent phishing, token theft/replay, OAuth app abuse, and pivoting from on-prem to Entra ID / cloud control planes.
+- **C2 resilience** — domain fronting alternatives, redirectors, malleable profiles, and C2 over legitimate SaaS; rotate infrastructure per OPSEC plan.
+- **Purple-team output** — map every action to ATT&CK and pair it with the detection opportunity so the engagement improves defense (hand off to Skills 12/15).
+
+**Precision rule:** maintain an attack log (timestamp, host, technique, ATT&CK ID, expected telemetry) for the debrief and report.

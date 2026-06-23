@@ -1,7 +1,7 @@
 ---
 name: Reverse Engineering & Binary Analysis
 description: Binary analysis, assembly interpretation, disassembly, decompilation, firmware RE, and protocol reverse engineering
-version: 2.0.0
+version: 3.0.0
 author: Masriyan
 tags: [cybersecurity, reverse-engineering, binary-analysis, disassembly, firmware, assembly, ctf]
 ---
@@ -344,3 +344,19 @@ python scripts/binary_analyzer.py --file firmware.bin --entropy
 - [PE Format Reference (Microsoft)](https://docs.microsoft.com/en-us/windows/win32/debug/pe-format)
 - [Binwalk Documentation](https://github.com/ReFirmLabs/binwalk)
 - [pwndbg Documentation](https://pwndbg.re/)
+
+
+---
+
+## v3.0 Enhancements (2026 Update)
+
+**Faster, more capable RE workflow:**
+
+- **AI-assisted decompilation** — use Claude to annotate Ghidra/IDA decompiler output: rename variables, recover structs, infer function purpose, and summarize control flow. Treat AI naming as hypotheses to verify, not ground truth.
+- **Ghidra headless automation** — script bulk analysis (`analyzeHeadless`) with post-scripts for cross-binary IOC and string extraction.
+- **Emulation-first triage** — Qiling/Unicorn to run snippets and resolve dynamic strings/config without a full debugger; angr for symbolic exploration of CTF-style logic.
+- **Go / Rust / Nim binaries** — apply language-specific recovery (Go: `gopclntab` function/string recovery; Rust: demangling, panic-string pivots) since stripped modern binaries dominate.
+- **eBPF & kernel objects** — recognize eBPF bytecode and kernel modules used for stealth.
+- **Firmware** — `binwalk` extraction → filesystem mount → emulate with FirmAE/QEMU; locate hardcoded creds, update mechanisms, and crypto keys.
+
+**Precision rule:** record load address/base, architecture, calling convention, and compiler/toolchain in every analysis so offsets are reproducible.

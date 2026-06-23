@@ -1,6 +1,6 @@
 # Installation Guide
 
-Complete installation instructions for the **Claude Code CyberSecurity Skill Collection v2.0**.
+Complete installation instructions for the **Claude Code CyberSecurity Skill Collection v3.0**.
 
 ---
 
@@ -53,6 +53,8 @@ pip install pyyaml             # Skills 02, 09, 11 (YAML OpenAPI specs)
 pip install boto3              # Skill 10 (AWS SDK — alternative to AWS CLI)
 pip install yara-python        # Skill 05 (YARA rule compilation)
 pip install scapy              # Skill 08 (PCAP analysis)
+pip install pyaxmlparser       # Skill 17 (APK manifest parsing)
+pip install pymodbus           # Skill 18 (Modbus lab tooling — optional)
 ```
 
 Scripts degrade gracefully when optional dependencies are absent — they print a warning and skip the feature that requires the missing package.
@@ -78,7 +80,7 @@ When a session starts, Claude reads each `SKILL.md` file's YAML frontmatter (nam
 mkdir -p ~/.claude/skills
 cp -r skills/* ~/.claude/skills/
 
-# Verify — should list 15 directories
+# Verify — should list 19 directories
 ls ~/.claude/skills/
 ```
 
@@ -112,7 +114,7 @@ ln -s "$(pwd)/skills/"* ~/.claude/skills/
 ### Check Files Are in Place
 
 ```bash
-# Count SKILL.md files — should output 15
+# Count SKILL.md files — should output 19
 find ~/.claude/skills/ -name "SKILL.md" | wc -l
 
 # Verify YAML frontmatter on a sample skill

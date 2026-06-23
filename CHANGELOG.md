@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.0.0] — 2026-06-23
+
+### Major Expansion — Four New Domains + Full Refresh of the Original 15
+
+Adds four new skill domains and brings every existing skill up to current (2025–2026) tradecraft and standards. Stronger automation, sharper methodology, more precise output.
+
+#### Added
+- **Skill 16 — AI & LLM Security** — OWASP Top 10 for LLM Applications (2025) + MITRE ATLAS threat modeling, prompt-injection/jailbreak test harness (`prompt_injection_tester.py`), RAG & agent/tool-use (function-calling/MCP) security review, and a model supply-chain scanner for unsafe `pickle` deserialization (`model_supply_chain.py`)
+- **Skill 17 — Mobile Application Security** — OWASP MASVS/MASTG coverage for Android & iOS, automated APK static triage (`apk_analyzer.py`: manifest flags, permissions, exported components, secret scanning), and Frida/objection dynamic-analysis workflows
+- **Skill 18 — OT / ICS / SCADA Security** — Purdue/ISA-95 model review, passive industrial-protocol analysis and exposure-dork generation (`ics_protocol_analyzer.py`: Modbus/DNP3/S7/EtherNet-IP/BACnet), MITRE ATT&CK for ICS, IEC 62443 zone/SL alignment, and a safety-first authorization gate
+- **Skill 19 — GRC & Compliance** — risk register scoring with heat map and quantitative ALE (`risk_register.py`), cross-framework control crosswalk (`control_mapper.py`: NIST CSF 2.0 ↔ ISO 27001:2022 ↔ SOC 2 ↔ 800-53r5 ↔ CIS v8 ↔ PCI DSS 4.0), gap analysis, audit evidence, and policy generation
+- **"v3.0 Enhancements (2026 Update)"** section in all 15 original skills with current techniques and standards
+
+#### Changed
+- **All SKILL.md versions** — bumped from 2.0.0 to 3.0.0
+- **Skill 02** — risk-based prioritization with CVSS 4.0, EPSS, CISA KEV, SBOM/VEX, and OSV.dev
+- **Skill 08** — JA4+ fingerprinting, QUIC/HTTP3, encrypted-DNS detection, Zeek-first pipeline
+- **Skill 09** — OWASP API Security Top 10 (2023), SSRF→cloud metadata, request smuggling, JWT/OAuth/OIDC, GraphQL
+- **Skill 10** — attack-path / CNAPP thinking, IMDSv2, Kubernetes Pod Security & workload identity, CI/CD supply chain, eBPF runtime
+- **Skill 13** — finalized NIST PQC standards (FIPS 203 ML-KEM / 204 ML-DSA / 205 SLH-DSA), hybrid TLS, crypto-agility
+- **Skill 14** — AD CS abuse (ESC1–ESC14), EDR evasion, identity/cloud red teaming; `engagement_planner.py` rewritten ATT&CK-aligned with Markdown export and RoE/OPSEC sections
+- **Skill 15** — detection-as-code, modern OS baselines, Zero Trust maturity; `hardening_checker.py` expanded (sysctl, SSH crypto, kernel modules) with remediation hints
+- **README / USAGE / INSTALL / CONTRIBUTING / SECURITY** — updated for 19 skills and v3.0
+
+#### Fixed
+- `hardening_checker.py` — crashed with `PermissionError` reading `/etc/ssh/sshd_config` as a non-root user; now degrades gracefully
+
+---
+
 ## [2.0.0] — 2025-05-28
 
 ### Major Overhaul — Complete Rebuild for Claude Code
@@ -69,4 +98,6 @@ Ground-up rebuild of all 15 skills, optimized specifically for how Claude Code r
 
 ---
 
+[3.0.0]: https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill/releases/tag/v3.0.0
+[2.0.0]: https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill/releases/tag/v2.0.0
 [1.0.0]: https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill/releases/tag/v1.0.0

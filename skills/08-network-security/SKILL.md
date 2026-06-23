@@ -1,7 +1,7 @@
 ---
 name: Network Security & Traffic Analysis
 description: Network traffic analysis, PCAP parsing, IDS/IPS rule creation, firewall configuration auditing, and network anomaly detection
-version: 2.0.0
+version: 3.0.0
 author: Masriyan
 tags: [cybersecurity, network, traffic-analysis, pcap, ids, ips, firewall, snort, suricata, zeek]
 ---
@@ -373,3 +373,18 @@ python scripts/pcap_analyzer.py --file capture.pcap --detect-beaconing --output 
 - [Zeek Documentation](https://docs.zeek.org/)
 - [SANS Network Forensics](https://www.sans.org/reading-room/)
 - [The TCP/IP Guide](http://www.tcpipguide.com/)
+
+
+---
+
+## v3.0 Enhancements (2026 Update)
+
+**Encrypted-traffic-era analysis:**
+
+- **JA4+ fingerprinting** — adopt the JA4/JA4S/JA4H/JA4X suite (successor to JA3) to fingerprint clients, servers, and malware over TLS without decryption; pivot on these in Zeek/Suricata.
+- **QUIC / HTTP3** — parse QUIC (UDP/443); recognize that classic TCP-centric rules miss it. Inspect Initial packets and SNI where visible.
+- **Encrypted DNS** — detect DoH/DoT/DoQ usage and tunneling; baseline resolvers and flag rogue endpoints.
+- **Beaconing detection refinement** — jitter-aware interval analysis, byte-count regularity, and long-connection scoring (RITA-style) to surface C2 over HTTPS/QUIC.
+- **Zeek-first pipeline** — generate `conn`, `ssl`, `http`, `dns`, `x509`, and JA4 logs as the analysis substrate; write detections against Zeek notices.
+
+**Precision rule:** report flows with the 5-tuple, JA4 fingerprint, bytes/duration, and a confidence-scored verdict; provide both a Suricata rule and a Zeek detection where applicable.

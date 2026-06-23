@@ -1,7 +1,7 @@
 ---
 name: Cloud Security & Container Hardening
 description: AWS/Azure/GCP security auditing, container and Kubernetes hardening, Infrastructure as Code scanning, and cloud compliance assessment
-version: 2.0.0
+version: 3.0.0
 author: Masriyan
 tags: [cybersecurity, cloud, aws, azure, gcp, kubernetes, docker, container, iac, terraform]
 ---
@@ -456,3 +456,18 @@ python scripts/iac_scanner.py --path ./k8s-manifests/ --type kubernetes --output
 - [CIS Kubernetes Benchmark](https://www.cisecurity.org/benchmark/kubernetes)
 - [Checkov Documentation](https://www.checkov.io/1.Welcome/What%20is%20Checkov.html)
 - [Prowler Documentation](https://docs.prowler.cloud/)
+
+
+---
+
+## v3.0 Enhancements (2026 Update)
+
+**Attack-path-driven cloud security:**
+
+- **Identity is the perimeter** — enumerate privilege-escalation paths (over-permissive roles, `iam:PassRole`, wildcard actions, cross-account trust, OIDC federation to CI/CD). Think in *attack paths* (CNAPP/CSPM-style), not isolated misconfigs.
+- **Instance metadata** — require IMDSv2 with hop-limit 1 on AWS; validate Azure/GCP metadata protections against SSRF (ties to Skill 09).
+- **Kubernetes 2026** — Pod Security Admission (baseline/restricted), workload identity (EKS Pod Identity / GKE Workload Identity / AKS), no cluster-admin to default SA, network policies default-deny, and admission control (OPA/Gatekeeper, Kyverno).
+- **CI/CD & supply chain** — secrets in pipelines, OIDC trust to cloud, artifact signing (Sigstore/cosign), SLSA provenance, and Terraform state file exposure.
+- **Runtime** — eBPF runtime detection (Falco/Tetragon) for container escape and crypto-mining; map findings to MITRE ATT&CK for Cloud/Containers.
+
+**Precision rule:** report each finding as *misconfig → reachable identity/data → blast radius*, with the exact CLI/IaC fix.

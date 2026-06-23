@@ -1,7 +1,7 @@
 ---
 name: Incident Response & Digital Forensics
 description: IR playbook execution, evidence collection, forensic timeline analysis, memory forensics, and post-incident reporting following NIST SP 800-61 and SANS PICERL methodology
-version: 2.0.0
+version: 3.0.0
 author: Masriyan
 tags: [cybersecurity, incident-response, forensics, dfir, evidence, timeline, picerl, nist]
 ---
@@ -384,3 +384,18 @@ python scripts/timeline_builder.py --logs ./logs/ --format html --start "2025-05
 - [Velociraptor Documentation](https://docs.velociraptor.app/)
 - [DFIR.training Resource Hub](https://www.dfir.training/)
 - [The Art of Memory Forensics (Book)](https://www.wiley.com/en-us/The+Art+of+Memory+Forensics-p-9781118825099)
+
+
+---
+
+## v3.0 Enhancements (2026 Update)
+
+**Cloud- and identity-era IR:**
+
+- **Cloud IR** — pull and triage AWS CloudTrail, Azure Activity/Entra sign-in & audit, and GCP Audit logs; preserve volatile cloud state (snapshots, IAM key disabling) before remediation.
+- **Identity & SaaS compromise** — handle token theft/replay, OAuth consent abuse, and federated trust attacks; revoke sessions/refresh tokens, rotate signing keys, review conditional-access.
+- **Modern toolkit** — Velociraptor for fleet-scale collection; Hayabusa/Chainsaw + Sigma over EVTX for rapid Windows timelining; KAPE for triage images.
+- **Ransomware specifics** — identify double/triple-extortion, exfil-before-encrypt evidence, ESXi/Linux scope, and recovery validation against immutable backups.
+- **Business Email Compromise** — inbox-rule and forwarding abuse, app-password persistence, mailbox audit log review.
+
+**Process rule (unchanged priority):** follow NIST SP 800-61 / SANS PICERL; preserve chain of custody; in cloud/OT contexts weigh evidence preservation against service/safety continuity (→ Skill 18 for OT).

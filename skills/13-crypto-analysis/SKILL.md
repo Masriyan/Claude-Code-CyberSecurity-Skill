@@ -1,7 +1,7 @@
 ---
 name: Cryptographic Analysis & Assessment
 description: SSL/TLS auditing, cipher suite analysis, hash algorithm identification, encryption implementation review, and cryptographic weakness detection in code
-version: 2.0.0
+version: 3.0.0
 author: Masriyan
 tags: [cybersecurity, cryptography, ssl, tls, encryption, hashing, cipher, pki, post-quantum]
 ---
@@ -354,3 +354,18 @@ python scripts/tls_auditor.py --host mail.example.com --port 993 --grade
 - [OWASP Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/)
 - [OWASP Cryptographic Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html)
 - [NIST Password Storage Guidelines](https://pages.nist.gov/800-63-3/sp800-63b.html)
+
+
+---
+
+## v3.0 Enhancements (2026 Update)
+
+**Post-quantum migration is now operational:**
+
+- **Finalized PQC standards** — FIPS 203 (**ML-KEM**, key encapsulation), FIPS 204 (**ML-DSA**, signatures), and FIPS 205 (**SLH-DSA**, hash-based signatures) are published. Recommend these for new designs; FIPS 206 (FN-DSA/Falcon) is forthcoming.
+- **Hybrid key exchange** — for TLS, recommend hybrid groups (e.g., X25519+ML-KEM-768 / `X25519MLKEM768`) so confidentiality survives both classical and quantum attacks during transition.
+- **Harvest-now-decrypt-later** — prioritize PQC for long-lived secrets and data with multi-year confidentiality requirements; this is a present risk, not a future one.
+- **Crypto-agility** — flag hardcoded algorithms/key sizes; recommend abstraction so primitives can be swapped. Inventory cryptography (a CBOM) as the first migration step.
+- **Hard deprecations** — TLS 1.3 preferred / TLS 1.0-1.1 disallowed; SHA-1 and RSA/DH < 2048 flagged as failing; RSA-2048 acceptable now but on the PQC migration clock.
+
+**Precision rule:** every finding states the primitive, key size/curve, protocol version, and the concrete upgrade (classical-now and PQC-target).

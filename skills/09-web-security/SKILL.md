@@ -1,7 +1,7 @@
 ---
 name: Web Application Security Testing
 description: OWASP Top 10 testing, injection vulnerability detection, API security assessment, authentication testing, and web vulnerability reporting for authorized assessments
-version: 2.0.0
+version: 3.0.0
 author: Masriyan
 tags: [cybersecurity, web-security, owasp, xss, sqli, api, pentest, burpsuite, authentication]
 ---
@@ -440,3 +440,19 @@ python scripts/api_security_tester.py --spec openapi.yaml --base-url https://api
 - [PortSwigger Web Security Academy](https://portswigger.net/web-security)
 - [PayloadsAllTheThings](https://github.com/swisskyrepo/PayloadsAllTheThings)
 - [HackTricks Web Pentesting](https://book.hacktricks.xyz/pentesting-web)
+
+
+---
+
+## v3.0 Enhancements (2026 Update)
+
+**Current web & API attack surface:**
+
+- **OWASP API Security Top 10 (2023)** — test BOLA/IDOR (API1), broken authentication (API2), broken object property level authorization / mass assignment (API3), unrestricted resource consumption (API4), and SSRF (API7) as first-class items alongside the web Top 10.
+- **SSRF → cloud metadata** — always attempt cloud IMDS reach (`169.254.169.254`, GCP `metadata.google.internal`, Azure IMDS) and require IMDSv2/hop-limit defenses (→ Skill 10).
+- **HTTP request smuggling** — CL.TE/TE.CL/CL.CL desync and HTTP/2 downgrade smuggling against front-end/back-end pairs.
+- **JWT & OAuth/OIDC** — `alg=none`, algorithm confusion (RS256→HS256), `kid` injection, weak secrets; OAuth flows: redirect_uri abuse, PKCE downgrade, consent phishing, device-code phishing.
+- **Client-side & template** — prototype pollution, DOM clobbering, SSTI per engine, and modern XSS via mutation/sanitizer bypass.
+- **GraphQL** — introspection abuse, batching/DoS, nested-query depth, and field-level authorization gaps.
+
+**Precision rule:** each finding ships a reproducible request/response, the affected parameter, and a parameterized/encoded fix at the correct sink.

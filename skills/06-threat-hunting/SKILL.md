@@ -1,7 +1,7 @@
 ---
 name: Threat Hunting & IOC Analysis
 description: IOC extraction, threat intelligence correlation, MITRE ATT&CK mapping, hunt hypothesis generation, and detection rule creation
-version: 2.0.0
+version: 3.0.0
 author: Masriyan
 tags: [cybersecurity, threat-hunting, ioc, mitre-attack, threat-intelligence, sigma, detection, siem]
 ---
@@ -385,3 +385,19 @@ python scripts/mitre_mapper.py --actor "APT29" --output apt29_layer.json
 - [MISP Threat Intelligence](https://www.misp-project.org/)
 - [OpenCTI Platform](https://www.opencti.io/)
 - [CISA Advisories](https://www.cisa.gov/cybersecurity-advisories)
+
+
+---
+
+## v3.0 Enhancements (2026 Update)
+
+**Threat-informed, repeatable hunting:**
+
+- **ATT&CK current version** — map to the latest Enterprise matrix (incl. updated cloud, identity, and containers techniques); call out sub-techniques explicitly.
+- **PEAK hunting framework** — structure hunts as Prepare → Execute → Act with a documented hypothesis, data sources, and ABLE (Actor/Behavior/Location/Evidence) baselining.
+- **Identity-centric hunting** — Entra ID / Okta logs: impossible travel, illicit OAuth consent grants, MFA-fatigue, token theft & replay, and risky sign-in correlation.
+- **Living-off-the-land** — baseline LOLBin/LOLBAS usage and hunt deviations rather than static signatures.
+- **Detection-as-code** — express hunt findings as Sigma rules under version control with test data, then promote validated hunts into Skill 12/15 detections.
+- **Hunt maturity** — track from ad-hoc → data-driven → automated; record which hunts became scheduled detections.
+
+**Precision rule:** every hunt yields a hypothesis, the query, the result (found/not-found/inconclusive), and a disposition (new detection / tuned alert / closed).

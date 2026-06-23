@@ -1,6 +1,6 @@
 # Usage Guide
 
-Comprehensive usage guide for the **Claude Code CyberSecurity Skill Collection v2.0**.
+Comprehensive usage guide for the **Claude Code CyberSecurity Skill Collection v3.0**.
 
 ---
 
@@ -311,6 +311,61 @@ python skills/15-blue-team-defense/scripts/hardening_checker.py --os windows --c
 ```
 
 Sigma/Suricata/YARA rule generation is handled directly by Claude using the detection templates in SKILL.md — just ask: `"Create a Sigma rule to detect scheduled task creation."`
+
+### 16 — AI & LLM Security
+
+```
+> Threat-model this RAG chatbot against the OWASP LLM Top 10
+> Test my chat endpoint for prompt injection and jailbreaks
+> Review my agent's tools for excessive agency and confused-deputy risk
+> Is this .pt model safe to load? Scan it for pickle code execution
+```
+
+```bash
+python skills/16-ai-llm-security/scripts/prompt_injection_tester.py --url https://app.test/api/chat --field message -o inj.json
+python skills/16-ai-llm-security/scripts/model_supply_chain.py --path ./models --recursive -o scan.json
+```
+
+### 17 — Mobile Security
+
+```
+> Analyze this APK for exported components and hardcoded secrets
+> Review the app against OWASP MASVS storage and network requirements
+> How do I bypass certificate pinning on this app for testing?
+```
+
+```bash
+python skills/17-mobile-security/scripts/apk_analyzer.py --apk app.apk -o apk_report.json
+python skills/17-mobile-security/scripts/apk_analyzer.py --apk app.apk --sources ./jadx_out -o apk_report.json
+```
+
+### 18 — OT / ICS / SCADA Security
+
+```
+> Review this OT network against the Purdue model and flag boundary violations
+> From this capture, which hosts issue Modbus writes to PLCs?
+> Recommend IEC 62443 zones, conduits, and Security Levels for this plant
+```
+
+```bash
+tshark -r capture.pcap -T json > capture.json
+python skills/18-ot-ics-security/scripts/ics_protocol_analyzer.py --input capture.json -o ics_report.json
+python skills/18-ot-ics-security/scripts/ics_protocol_analyzer.py --dorks --vendor siemens -o dorks.txt
+```
+
+### 19 — GRC & Compliance
+
+```
+> Run a SOC 2 gap analysis and a remediation roadmap
+> Map our ISO 27001 controls to NIST CSF 2.0 to reuse audit evidence
+> Score this risk register and show me the heat map
+> Draft an Acceptable Use Policy mapped to the controls it satisfies
+```
+
+```bash
+python skills/19-grc-compliance/scripts/risk_register.py --input risks.yaml -o register.json
+python skills/19-grc-compliance/scripts/control_mapper.py --control "access control" --frameworks all
+```
 
 ---
 

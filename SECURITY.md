@@ -4,8 +4,9 @@
 
 | Version | Supported |
 | ------- | --------- |
-| 2.0.x   | Yes       |
-| 1.0.x   | No — end of life, upgrade to v2.0 |
+| 3.0.x   | Yes       |
+| 2.0.x   | Security fixes only — upgrade to v3.0 |
+| 1.0.x   | No — end of life, upgrade to v3.0 |
 
 ---
 
