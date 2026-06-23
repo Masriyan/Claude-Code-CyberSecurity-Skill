@@ -1,0 +1,52 @@
+{
+  "name": "cybersecurity-skills",
+  "owner": {
+    "name": "Masriyan"
+  },
+  "metadata": {
+    "description": "Cybersecurity skills marketplace for Claude Code — offensive, defensive, and operational security domains.",
+    "version": "3.0.0"
+  },
+  "plugins": [
+    {
+      "name": "cybersecurity",
+      "source": "./",
+      "description": "A complete cybersecurity toolkit: 19 skills spanning reconnaissance, vulnerability assessment, exploit development, reverse engineering, malware analysis, threat hunting, incident response, network/web/cloud security, SOC automation, log analysis, cryptography, red and blue team operations, and AI/LLM, mobile, OT/ICS, and GRC security.",
+      "version": "3.0.0",
+      "author": {
+        "name": "Masriyan"
+      },
+      "license": "MIT",
+      "keywords": [
+        "cybersecurity",
+        "pentest",
+        "blue-team",
+        "red-team",
+        "soc",
+        "dfir",
+        "threat-hunting"
+      ],
+      "skills": [
+        "./skills/01-recon-osint",
+        "./skills/02-vulnerability-scanner",
+        "./skills/03-exploit-development",
+        "./skills/04-reverse-engineering",
+        "./skills/05-malware-analysis",
+        "./skills/06-threat-hunting",
+        "./skills/07-incident-response",
+        "./skills/08-network-security",
+        "./skills/09-web-security",
+        "./skills/10-cloud-security",
+        "./skills/11-csoc-automation",
+        "./skills/12-log-analysis",
+        "./skills/13-crypto-analysis",
+        "./skills/14-red-team-ops",
+        "./skills/15-blue-team-defense",
+        "./skills/16-ai-llm-security",
+        "./skills/17-mobile-security",
+        "./skills/18-ot-ics-security",
+        "./skills/19-grc-compliance"
+      ]
+    }
+  ]
+}
