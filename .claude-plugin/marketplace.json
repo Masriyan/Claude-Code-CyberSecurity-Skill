@@ -1,7 +1,7 @@
 {
   "name": "cybersecurity-skills",
   "owner": {
-    "name": "Masriyan"
+    "name": "Masriyan (sudo3rs)"
   },
   "metadata": {
     "description": "Cybersecurity skills marketplace for Claude Code — offensive, defensive, and operational security domains.",
@@ -14,7 +14,7 @@
       "description": "A complete cybersecurity toolkit: 19 skills spanning reconnaissance, vulnerability assessment, exploit development, reverse engineering, malware analysis, threat hunting, incident response, network/web/cloud security, SOC automation, log analysis, cryptography, red and blue team operations, and AI/LLM, mobile, OT/ICS, and GRC security.",
       "version": "3.0.0",
       "author": {
-        "name": "Masriyan"
+        "name": "Masriyan (sudo3rs)"
       },
       "license": "MIT",
       "keywords": [
