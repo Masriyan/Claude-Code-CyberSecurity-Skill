@@ -58,6 +58,9 @@ These skills are built around what **Claude does natively** in Claude Code:
 ## Update proof of works
 <img src="assets/Updates.png" alt="Claude Code Cyber Security Skills Install Proof" width="100%">
 
+## Update testing 
+<img src="assets/Updates2.png" alt="Claude Code Cyber Security Skills Testing" width="100%">
+
 ## Skill Collection
 
 | # | Skill | Domain | Key Capabilities |
