@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **Skill 10** — `cloud_auditor.py`: `AWSAuditor.audit_iam()`'s password-policy check treated *any* error from `aws iam get-account-password-policy` -- including "command not found" when the AWS CLI simply isn't installed -- as proof the account has no password policy, emitting an HIGH `IAM-NO-PASSWORD-POLICY` finding purely from a `FileNotFoundError`, indistinguishable from a real misconfiguration. Now only asserts the finding when the error is AWS's actual `NoSuchEntity` response; any other error is logged and skipped, matching how `audit_s3`/`audit_ec2_security_groups` already handle unrelated CLI/network failures.
+
+---
+
 ## [3.0.0] — 2026-06-23
 
 ### Major Expansion — Four New Domains + Full Refresh of the Original 15

@@ -106,11 +106,22 @@ class AWSAuditor:
         # Password policy
         result = self._aws("iam", "get-account-password-policy")
         if "error" in result:
-            self.add_finding(
-                "IAM-NO-PASSWORD-POLICY", "HIGH", "IAM Password Policy",
-                "No IAM password policy is configured.",
-                "Set a strong password policy: min 14 chars, uppercase, numbers, symbols, 90-day rotation."
-            )
+            # AWS returns a NoSuchEntity error specifically when no password
+            # policy is configured -- that's the only error text that
+            # actually confirms this finding. Any other error (CLI not
+            # installed, no credentials, network failure, throttling) means
+            # we simply couldn't check, and must not be asserted as proof
+            # of a missing policy -- confirmed: with the aws CLI absent,
+            # this unconditionally fired the same HIGH finding purely from
+            # a FileNotFoundError, indistinguishable from a real gap.
+            if "nosuchentity" in result["error"].lower():
+                self.add_finding(
+                    "IAM-NO-PASSWORD-POLICY", "HIGH", "IAM Password Policy",
+                    "No IAM password policy is configured.",
+                    "Set a strong password policy: min 14 chars, uppercase, numbers, symbols, 90-day rotation."
+                )
+            else:
+                logger.warning("Cannot check IAM password policy: %s", result["error"])
         else:
             policy = result.get("data", {}).get("PasswordPolicy", {})
             if policy.get("MinimumPasswordLength", 0) < 14:
