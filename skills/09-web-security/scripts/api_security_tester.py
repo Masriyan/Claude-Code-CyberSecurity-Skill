@@ -167,7 +167,10 @@ class APISecurityTester:
 
         for ep in test_endpoints:
             resp = self._request(ep["method"], ep["path"], use_auth=False)
-            if resp and resp.status_code not in (401, 403):
+            # requests.Response.__bool__() is resp.ok, i.e. False for any
+            # 4xx/5xx -- "resp and ..." silently treats a real error
+            # response the same as "no response at all" (resp is None).
+            if resp is not None and resp.status_code not in (401, 403):
                 self.add_finding(
                     "API2-AUTH", f"Missing Authentication: {ep['path']}", "CRITICAL",
                     f"{ep['method']} {ep['path']} returns HTTP {resp.status_code} without authentication.",
@@ -214,7 +217,14 @@ class APISecurityTester:
         success_count = 0
         for _ in range(requests_count):
             resp = self._request("POST", path, data={"username": "test", "password": "wrong"}, use_auth=False)
-            if resp and resp.status_code not in (429, 503):
+            # See test_broken_auth for why this must be "is not None", not
+            # truthiness: a login endpoint legitimately returns 401 for
+            # wrong credentials, which makes bool(resp) False, so
+            # "resp and ..." never counted a single request as a success --
+            # the exact case this test exists to catch (no rate limiting on
+            # an endpoint that always returns 401) always reported zero
+            # findings.
+            if resp is not None and resp.status_code not in (429, 503):
                 success_count += 1
             time.sleep(0.1)
 
@@ -234,9 +244,9 @@ class APISecurityTester:
         """Check for missing security headers."""
         logger.info("Checking security headers...")
         resp = self._request("GET", "/")
-        if not resp:
+        if resp is None:
             resp = self._request("GET", "/api")
-        if not resp:
+        if resp is None:
             return
 
         required_headers = {
@@ -270,7 +280,10 @@ class APISecurityTester:
         ]
         for path in debug_paths:
             resp = self._request("GET", path, use_auth=False)
-            if resp and resp.status_code in (200, 401) and resp.status_code != 404:
+            # Same truthiness pitfall as test_rate_limiting: the whole
+            # point of including 401 here is to catch an exposed endpoint
+            # that exists but is behind auth, and 401 responses are falsy.
+            if resp is not None and resp.status_code in (200, 401) and resp.status_code != 404:
                 severity = "MEDIUM" if resp.status_code == 401 else "HIGH"
                 self.add_finding(
                     "API9-INVENTORY", f"Exposed Endpoint Discovered: {path}", severity,

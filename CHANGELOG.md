@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **Skill 09** — `api_security_tester.py`: `test_rate_limiting`, `test_exposed_debug_endpoints`, and `test_broken_auth` used `if resp and ...` where `resp` is a real `requests.Response` object -- `Response.__bool__()` is `False` for any 4xx/5xx status, so a genuine error response was silently treated the same as "no response at all" (`resp is None`). Verified on `test_rate_limiting`: a login endpoint with zero rate limiting (always returns 401 for the wrong-credentials test payload -- the textbook vulnerable case) produced zero findings. Same bug silenced the 401 branch of `test_exposed_debug_endpoints`. Changed all three (plus `test_security_headers`'s equivalent `if not resp` fallback) to check `is not None`/`is None`.
+- **Skill 09** — `owasp_scanner.py`: `XSS_PAYLOADS`/`SQLI_PAYLOADS` were defined but never referenced anywhere in the file -- an "OWASP Top 10" scanner that never actually tested for injection (A03). Added `check_injection()`, wired into `run()`/`--tests a03`.
+
+---
+
 ## [3.0.0] — 2026-06-23
 
 ### Major Expansion — Four New Domains + Full Refresh of the Original 15

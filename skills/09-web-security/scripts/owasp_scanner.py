@@ -45,6 +45,18 @@ XSS_PAYLOADS = [
 
 SQLI_PAYLOADS = ["'", "' OR '1'='1", "\" OR \"1\"=\"1", "1; DROP TABLE--", "' UNION SELECT NULL--"]
 
+# Common database error strings that leak through error-based SQLi.
+SQL_ERROR_SIGNATURES = [
+    "you have an error in your sql syntax",
+    "warning: mysql",
+    "unclosed quotation mark",
+    "quoted string not properly terminated",
+    "sqlstate",
+    "pg_query()",
+    "sqlite3.operationalerror",
+    "ora-00933",
+]
+
 
 class OWASPScanner:
     """Basic OWASP Top 10 web vulnerability scanner."""
@@ -99,6 +111,43 @@ class OWASPScanner:
             except RequestException:
                 pass
 
+    def check_injection(self) -> None:
+        """Basic reflected-XSS and error-based-SQLi probe via a query parameter.
+
+        This is a lightweight signal, not a full crawler/fuzzer: it has no
+        endpoint or parameter discovery, so it only probes a single query
+        parameter on the base URL. It exists so an "OWASP Top 10" scanner
+        that ships XSS_PAYLOADS/SQLI_PAYLOADS actually tests for injection
+        (A03) instead of defining those payload lists and never using them.
+        """
+        logger.info("[A03] Checking for injection (XSS/SQLi) via a query parameter probe...")
+        probe_param = "cyberskill_probe"
+
+        for payload in XSS_PAYLOADS:
+            try:
+                resp = self.session.get(self.base_url, params={probe_param: payload}, timeout=self.timeout)
+                if payload in resp.text:
+                    self.findings.append({"category": "A03-Injection", "severity": "HIGH",
+                                         "title": "Possible reflected XSS",
+                                         "description": f"Payload {payload!r} was reflected unescaped in the "
+                                                         f"response for ?{probe_param}=..."})
+                    break  # one confirmed reflection is enough evidence
+            except RequestException:
+                pass
+
+        for payload in SQLI_PAYLOADS:
+            try:
+                resp = self.session.get(self.base_url, params={probe_param: payload}, timeout=self.timeout)
+                body_lower = resp.text.lower()
+                if any(sig in body_lower for sig in SQL_ERROR_SIGNATURES):
+                    self.findings.append({"category": "A03-Injection", "severity": "HIGH",
+                                         "title": "Possible SQL injection (error-based)",
+                                         "description": f"Payload {payload!r} triggered a database error "
+                                                         f"signature in the response for ?{probe_param}=..."})
+                    break
+            except RequestException:
+                pass
+
     def check_cors(self) -> None:
         logger.info("[A01] Checking CORS configuration...")
         try:
@@ -118,7 +167,7 @@ class OWASPScanner:
         logger.info("OWASP Scan: %s", self.base_url)
         logger.info("=" * 50)
 
-        all_tests = {"a01": self.check_cors, "a02": self.check_tls,
+        all_tests = {"a01": self.check_cors, "a02": self.check_tls, "a03": self.check_injection,
                      "a05": lambda: (self.check_security_headers(), self.check_common_paths())}
         if tests:
             for t in tests:
@@ -130,6 +179,7 @@ class OWASPScanner:
             self.check_security_headers()
             self.check_common_paths()
             self.check_cors()
+            self.check_injection()
 
         severity_counts = {}
         for f in self.findings:
