@@ -238,11 +238,27 @@ class BinaryAnalyzer:
             if segment["p_type"] == "PT_GNU_RELRO":
                 security["RELRO"] = "Partial"
 
-        # Full RELRO check
-        for section in elf.iter_sections():
-            if section.name == ".got.plt":
-                if section["sh_flags"] & 0x2 == 0:
-                    security["RELRO"] = "Full"
+        # Full RELRO check. This is NOT a section-flags check: once
+        # -z,now (BIND_NOW) is linked in, the .got.plt section is folded
+        # away entirely (only .got/.plt.got remain), so a ".got.plt"
+        # name lookup never matches on a genuinely Full-RELRO binary --
+        # confirmed with `gcc -Wl,-z,relro,-z,now` + readelf. Full RELRO
+        # is PT_GNU_RELRO (checked above) *and* BIND_NOW, which is
+        # recorded in the .dynamic section as DT_FLAGS/DF_BIND_NOW or
+        # DT_FLAGS_1/DF_1_NOW (the same way checksec/pwntools detect it).
+        if security["RELRO"] == "Partial":
+            dynamic_section = elf.get_section_by_name(".dynamic")
+            if dynamic_section is not None:
+                for tag in dynamic_section.iter_tags():
+                    if tag.entry.d_tag == "DT_BIND_NOW":
+                        security["RELRO"] = "Full"
+                        break
+                    if tag.entry.d_tag == "DT_FLAGS" and tag.entry.d_val & 0x8:  # DF_BIND_NOW
+                        security["RELRO"] = "Full"
+                        break
+                    if tag.entry.d_tag == "DT_FLAGS_1" and tag.entry.d_val & 0x1:  # DF_1_NOW
+                        security["RELRO"] = "Full"
+                        break
 
         # Stack canary check (look for __stack_chk_fail)
         for section in elf.iter_sections():

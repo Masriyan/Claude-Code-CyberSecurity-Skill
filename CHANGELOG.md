@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **Skill 04** — `binary_analyzer.py`: Full RELRO detection looked for a `.got.plt` section that the linker removes entirely once Full RELRO (`-z,now`) is actually applied, and tested the wrong section-flag bit besides; a genuinely Full-RELRO binary was reported as only "Partial". Now checks `DT_BIND_NOW`/`DF_BIND_NOW`/`DF_1_NOW` in `.dynamic`, the same way checksec/pwntools do
+
+---
+
 ## [3.0.0] — 2026-06-23
 
 ### Major Expansion — Four New Domains + Full Refresh of the Original 15
