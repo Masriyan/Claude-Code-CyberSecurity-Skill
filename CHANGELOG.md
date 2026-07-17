@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **Skill 06** — `ioc_extractor.py`: the `file_path_unix` regex's leading `\b` could never be satisfied before a `/`, so it never matched any real Unix path (e.g. `/tmp/malicious_payload.sh`, `/var/log/auth.log`) unless the `/` happened to be glued directly to a preceding alphanumeric character
+
+---
+
 ## [3.0.0] — 2026-06-23
 
 ### Major Expansion — Four New Domains + Full Refresh of the Original 15

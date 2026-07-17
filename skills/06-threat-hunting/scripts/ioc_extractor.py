@@ -54,7 +54,12 @@ IOC_PATTERNS = {
         r"\\[^\s\"',;)}\]]{5,}\b"
     ),
     "file_path_windows": re.compile(r"\b[A-Z]:\\(?:[^\s\"',;)}\]\\]+\\)*[^\s\"',;)}\]]+\b"),
-    "file_path_unix": re.compile(r"\b/(?:usr|etc|var|tmp|home|opt|bin|sbin|root)/[^\s\"',;)}\]]+\b"),
+    # \b before "/" can never match (neither "/" nor the whitespace/
+    # punctuation/start-of-string before it is a word character), so this
+    # never matched a single real Unix path -- only accidentally fired
+    # when "/" was glued directly to a preceding alphanumeric character.
+    # A negative lookbehind for "not already inside a path" replaces it.
+    "file_path_unix": re.compile(r"(?<![\w/])/(?:usr|etc|var|tmp|home|opt|bin|sbin|root)/[^\s\"',;)}\]]+"),
     "bitcoin": re.compile(r"\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b"),
     "mutex": re.compile(r"(?:Mutex|mutex|MUTEX)[:\s]+[\"\']?([^\s\"',;)}\]]+)"),
 }
