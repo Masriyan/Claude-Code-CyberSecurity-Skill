@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **Skill 07** — `evidence_collector.py`: `_collect_bash_histories()` crashed with an unhandled `PermissionError` when run as a non-root user, because `Path.exists()` itself can raise `PermissionError` (pathlib only swallows `ENOENT`/`ENOTDIR`/`EBADF`/`ELOOP` internally, not `EACCES`) when `/root` isn't readable by the current user. This aborted `collect_volatile()` before writing any evidence at all.
+
+---
+
 ## [3.0.0] — 2026-06-23
 
 ### Major Expansion — Four New Domains + Full Refresh of the Original 15

@@ -198,13 +198,29 @@ class EvidenceCollector:
         histories = {}
         for home_dir in Path("/home").iterdir() if Path("/home").exists() else []:
             hist = home_dir / ".bash_history"
-            if hist.exists():
+            # .exists() itself can raise PermissionError (not just the
+            # read) when the containing directory isn't even statable by
+            # the current user -- pathlib only swallows ENOENT/ENOTDIR/
+            # EBADF/ELOOP internally, not EACCES. Guard the existence
+            # check too, or a non-root run aborts the whole collector
+            # with an unhandled traceback before writing any evidence.
+            try:
+                exists = hist.exists()
+            except PermissionError:
+                histories[str(hist)] = "[permission denied]"
+                continue
+            if exists:
                 try:
                     histories[str(hist)] = hist.read_text(errors="replace")[-10000:]  # Last 10KB
                 except (IOError, PermissionError):
                     histories[str(hist)] = "[permission denied]"
         root_hist = Path("/root/.bash_history")
-        if root_hist.exists():
+        try:
+            root_exists = root_hist.exists()
+        except PermissionError:
+            histories[str(root_hist)] = "[permission denied]"
+            root_exists = False
+        if root_exists:
             try:
                 histories[str(root_hist)] = root_hist.read_text(errors="replace")[-10000:]
             except (IOError, PermissionError):
