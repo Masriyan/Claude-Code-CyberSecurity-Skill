@@ -52,6 +52,19 @@ LOG_PATTERNS = {
     ),
 }
 
+# Sub-patterns for pulling user/src_ip/status out of an auth_log "message"
+# field. anomaly_detector.py's brute-force/after-hours/lateral-movement
+# detectors default to exactly these three field names (this module's own
+# docstring says "Works on JSON output from log_parser.py"), but the
+# syslog/auth_log LOG_PATTERNS above only capture timestamp/hostname/
+# process/pid/message -- without this enrichment those detectors silently
+# find nothing on real auth_log input, no matter how anomalous it is.
+AUTH_LOG_SUBPATTERNS = [
+    (re.compile(r"Failed password for (?:invalid user )?(?P<user>\S+) from (?P<src_ip>[0-9a-fA-F.:]+)"), "failed"),
+    (re.compile(r"Accepted (?:password|publickey) for (?P<user>\S+) from (?P<src_ip>[0-9a-fA-F.:]+)"), "success"),
+    (re.compile(r"Invalid user (?P<user>\S+) from (?P<src_ip>[0-9a-fA-F.:]+)"), "failed"),
+]
+
 # Security-relevant event keywords
 SECURITY_KEYWORDS = {
     "authentication_success": ["accepted", "session opened", "logged in", "authentication success"],
@@ -98,6 +111,9 @@ class LogParser:
                 events = self._parse_json_logs(f)
             elif detected in LOG_PATTERNS:
                 events = self._parse_pattern_logs(f, LOG_PATTERNS[detected], filepath)
+                if detected == "auth_log":
+                    for event in events:
+                        self._enrich_auth_log_event(event)
             else:
                 events = self._parse_raw_logs(f, filepath)
 
@@ -151,6 +167,19 @@ class LogParser:
                 "_line_number": line_num,
             })
         return events
+
+    def _enrich_auth_log_event(self, event: Dict[str, Any]) -> None:
+        """Pull user/src_ip/status out of an auth_log message in place, for
+        downstream tools (e.g. anomaly_detector.py) that key off those
+        field names rather than re-parsing raw message text themselves."""
+        message = event.get("message", "")
+        for pattern, status in AUTH_LOG_SUBPATTERNS:
+            match = pattern.search(message)
+            if match:
+                event["user"] = match.group("user")
+                event["src_ip"] = match.group("src_ip")
+                event["status"] = status
+                return
 
     def _classify_event(self, message: str) -> str:
         """Classify a log event into security categories."""

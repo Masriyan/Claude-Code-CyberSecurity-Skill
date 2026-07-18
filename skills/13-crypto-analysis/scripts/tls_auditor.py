@@ -15,6 +15,13 @@ import sys
 import time
 from typing import Any, Dict, List, Optional
 
+try:
+    from cryptography import x509
+    from cryptography.hazmat.backends import default_backend
+    HAS_CRYPTOGRAPHY = True
+except ImportError:
+    HAS_CRYPTOGRAPHY = False
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -95,6 +102,44 @@ class TLSAuditor:
             cert_info["error"] = f"Certificate verification failed: {str(e)}"
             cert_info["valid"] = False
             logger.warning("[Cert] Verification failed: %s", str(e))
+            # create_default_context() raises here on ANY verification
+            # failure, including an expired certificate -- which means the
+            # expiry computation a few lines above never runs, and
+            # cert_info["expired"] silently stays unset. That leaves
+            # _assess_vulnerabilities/_calculate_grade's dedicated "expired
+            # certificate" CRITICAL branch dead code for a real expired
+            # cert: only the generic "validation failed" HIGH fires,
+            # under-penalizing a genuinely expired-but-otherwise-strong
+            # config. Re-fetch the cert with verification disabled purely
+            # to check its expiry -- the original verification failure is
+            # still reported via cert_info["error"] above.
+            #
+            # getpeercert() returns {} (no parsed fields) when verify_mode
+            # is CERT_NONE -- Python's ssl module only populates it after
+            # successful validation -- so this needs getpeercert(binary_form=True)
+            # plus the optional `cryptography` package to actually read
+            # notAfter out of the raw DER certificate.
+            if HAS_CRYPTOGRAPHY:
+                try:
+                    unverified_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                    unverified_context.check_hostname = False
+                    unverified_context.verify_mode = ssl.CERT_NONE
+                    with socket.create_connection((self.host, self.port), timeout=self.timeout) as sock:
+                        with unverified_context.wrap_socket(sock, server_hostname=self.host) as ssock:
+                            der = ssock.getpeercert(binary_form=True)
+                    if der:
+                        parsed_cert = x509.load_der_x509_certificate(der, default_backend())
+                        not_after_dt = getattr(parsed_cert, "not_valid_after_utc", None) or parsed_cert.not_valid_after
+                        days_remaining = (not_after_dt.timestamp() - time.time()) / 86400
+                        cert_info["not_after"] = not_after_dt.strftime("%b %d %H:%M:%S %Y GMT")
+                        cert_info["days_until_expiry"] = round(days_remaining, 1)
+                        cert_info["expired"] = days_remaining < 0
+                        cert_info["expiring_soon"] = 0 < days_remaining < 30
+                except Exception as inner_e:
+                    logger.debug("[Cert] Could not determine expiry after verification failure: %s", str(inner_e))
+            else:
+                logger.debug("[Cert] 'cryptography' package not installed: pip install cryptography "
+                             "-- cannot determine expiry after a verification failure")
         except Exception as e:
             cert_info["error"] = str(e)
             logger.error("[Cert] Error: %s", str(e))
