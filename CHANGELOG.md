@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Skill 20 — Supply Chain Security** — SBOM generation/analysis (CycloneDX/SPDX), dependency confusion & typosquatting detection, malicious package lifecycle-script indicators, CI/CD (GitHub Actions) pipeline hardening, and artifact provenance/signing guidance (SLSA, Sigstore/cosign, in-toto, npm provenance), with `supply_chain_auditor.py` for the automatable static checks
+
 ### Fixed
 - **Skill 12** — `log_parser.py`/`anomaly_detector.py`: chaining these two tools exactly as this module's own docstring instructs ("Works on JSON output from log_parser.py") silently found zero anomalies on real auth_log input, no matter how anomalous. `log_parser.py`'s syslog/auth_log regex only captured timestamp/hostname/process/pid/message and never populated `src_ip`/`user`/`status`, which `anomaly_detector.py`'s brute-force/after-hours/lateral-movement detectors default to and require. Added auth_log message sub-parsing in `log_parser.py` to extract those three fields for common SSH/PAM message shapes (Failed/Accepted password, Invalid user).
 - **Skill 13** — `tls_auditor.py`: the expired-certificate detail path was dead code for real expired certificates. `ssl.create_default_context()` raises `SSLCertVerificationError` at `wrap_socket()` *before* the expiry computation runs, so `cert_info["expired"]` never got set for a genuinely expired cert -- only the generic "Certificate validation failed" HIGH finding fired, and the dedicated CRITICAL "Certificate expired" branch in `_assess_vulnerabilities`/`_calculate_grade` was unreachable. Now re-checks expiry via an unverified connection (using the optional `cryptography` package, with a graceful skip if it's not installed) after a verification failure, so both findings fire correctly.

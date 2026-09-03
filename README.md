@@ -3,7 +3,7 @@
   
   <img src="https://img.shields.io/badge/Claude%20Code-CyberSecurity%20Skills-red?style=for-the-badge" alt="Claude Code CyberSecurity Skills"/>
   <br/>
-  <img src="https://img.shields.io/badge/Skills-19-blue?style=flat-square" alt="Skills"/>
+  <img src="https://img.shields.io/badge/Skills-20-blue?style=flat-square" alt="Skills"/>
   <img src="https://img.shields.io/badge/Version-3.0.0-orange?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"/>
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python"/>
@@ -14,7 +14,7 @@
 
 # Claude Code CyberSecurity Skill Collection
 
-> **19 production-quality Claude Code Skills for cybersecurity professionals** — covering offensive security, defensive operations, reverse engineering, threat hunting, CSOC automation, AI/LLM security, mobile, OT/ICS, GRC, and more. Version 3.0 — expanded coverage, sharper methodology, and stronger automation.
+> **20 production-quality Claude Code Skills for cybersecurity professionals** — covering offensive security, defensive operations, reverse engineering, threat hunting, CSOC automation, AI/LLM security, mobile, OT/ICS, GRC, software supply chain security, and more. Version 3.0 — expanded coverage, sharper methodology, and stronger automation.
 
 Transform Claude Code into your ultimate cybersecurity co-pilot. Each skill provides Claude with structured methodology, decision frameworks, ready-to-run commands, and output templates that enable precise, expert-level assistance for real-world security operations.
 
@@ -76,6 +76,7 @@ These skills are built around what **Claude does natively** in Claude Code:
 | 17 | [Mobile Security](skills/17-mobile-security/) | Mobile | Android/iOS testing, MASVS/MASTG, APK/IPA static analysis, Frida/objection, mobile malware triage |
 | 18 | [OT / ICS / SCADA Security](skills/18-ot-ics-security/) | Industrial | Purdue model, Modbus/DNP3/S7 analysis, IEC 62443, ATT&CK for ICS, safety-first methodology |
 | 19 | [GRC & Compliance](skills/19-grc-compliance/) | Governance | Risk scoring, NIST CSF 2.0/ISO 27001/SOC 2 mapping, gap analysis, audit evidence, policy generation |
+| 20 | [Supply Chain Security](skills/20-supply-chain-security/) | Supply Chain | SBOM generation/analysis, dependency confusion & typosquatting detection, CI/CD pipeline hardening, SLSA/Sigstore provenance |
 
 ---
 
@@ -150,6 +151,9 @@ claude
 
 # GRC & Compliance (Skill 19 activates)
 > Run a SOC 2 gap analysis and map our controls to NIST CSF 2.0
+
+# Supply Chain Security (Skill 20 activates)
+> Audit this repo for typosquatted dependencies and unpinned GitHub Actions
 ```
 
 You can also **explicitly name a skill**:
@@ -208,7 +212,8 @@ Claude-Code-CyberSecurity-Skill/
     ├── 16-ai-llm-security/       SKILL.md + scripts/ + examples/
     ├── 17-mobile-security/       SKILL.md + scripts/ + examples/
     ├── 18-ot-ics-security/       SKILL.md + scripts/ + examples/
-    └── 19-grc-compliance/        SKILL.md + scripts/ + examples/
+    ├── 19-grc-compliance/        SKILL.md + scripts/ + examples/
+    └── 20-supply-chain-security/ SKILL.md + scripts/ + examples/
 ```
 
 ---

@@ -11,7 +11,7 @@
     {
       "name": "cybersecurity",
       "source": "./",
-      "description": "A complete cybersecurity toolkit: 19 skills spanning reconnaissance, vulnerability assessment, exploit development, reverse engineering, malware analysis, threat hunting, incident response, network/web/cloud security, SOC automation, log analysis, cryptography, red and blue team operations, and AI/LLM, mobile, OT/ICS, and GRC security.",
+      "description": "A complete cybersecurity toolkit: 20 skills spanning reconnaissance, vulnerability assessment, exploit development, reverse engineering, malware analysis, threat hunting, incident response, network/web/cloud security, SOC automation, log analysis, cryptography, red and blue team operations, AI/LLM, mobile, OT/ICS, and GRC security, and software supply chain security.",
       "version": "3.0.0",
       "author": {
         "name": "Masriyan (sudo3rs)"
@@ -45,7 +45,8 @@
         "./skills/16-ai-llm-security",
         "./skills/17-mobile-security",
         "./skills/18-ot-ics-security",
-        "./skills/19-grc-compliance"
+        "./skills/19-grc-compliance",
+        "./skills/20-supply-chain-security"
       ]
     }
   ]

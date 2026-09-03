@@ -49,6 +49,16 @@ If your antivirus quarantines files from this repository:
 2. **Review the source code** — Verify the flagged file contains only string templates
 3. **Use in isolated environments** — Offensive skills should be used in authorized lab/test environments
 
+#### Windows Defender
+
+On Windows, real-time protection can silently delete flagged files on write or on every OneDrive sync cycle — for example, `payload_generator.py` being re-deleted each time it was restored or re-synced, with no on-screen warning (only visible via `Get-MpThreatDetection`). If files in this repo keep disappearing after `git restore`/`git pull`/OneDrive sync, add an exclusion **before** restoring them, in an elevated PowerShell prompt:
+
+```powershell
+Add-MpPreference -ExclusionPath "C:\path\to\Claude-Code-CyberSecurity-Skill"
+```
+
+Then re-run `git restore <file>` (or re-sync) to bring the quarantined file back.
+
 ---
 
 ## Reporting a Vulnerability

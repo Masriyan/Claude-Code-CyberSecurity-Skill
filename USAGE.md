@@ -367,6 +367,20 @@ python skills/19-grc-compliance/scripts/risk_register.py --input risks.yaml -o r
 python skills/19-grc-compliance/scripts/control_mapper.py --control "access control" --frameworks all
 ```
 
+### 20 — Supply Chain Security
+
+```
+> Audit this repo for typosquatted or floating dependencies and unpinned GitHub Actions
+> Generate a CycloneDX SBOM for this project and flag anything with no known source repo
+> Is this postinstall script safe to run?
+> What SLSA level are our release builds at, and what would it take to reach the next one?
+```
+
+```bash
+python skills/20-supply-chain-security/scripts/supply_chain_auditor.py --project-dir . -o audit.json
+python skills/20-supply-chain-security/scripts/supply_chain_auditor.py --project-dir . --check-registry -o audit.json
+```
+
 ---
 
 ## Chaining Skills Together
@@ -435,6 +449,7 @@ All scripts that exist and are validated to run:
 | `tls_auditor.py` | 13 | TLS/SSL certificate auditing |
 | `engagement_planner.py` | 14 | Red team engagement planning |
 | `hardening_checker.py` | 15 | System hardening verification |
+| `supply_chain_auditor.py` | 20 | Typosquat/floating-dependency & CI pipeline audit |
 
 ---
 
