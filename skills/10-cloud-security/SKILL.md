@@ -1,7 +1,7 @@
 ---
 name: Cloud Security & Container Hardening
 description: AWS/Azure/GCP security auditing, container and Kubernetes hardening, Infrastructure as Code scanning, and cloud compliance assessment
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, cloud, aws, azure, gcp, kubernetes, docker, container, iac, terraform]
 ---

@@ -1,7 +1,7 @@
 ---
 name: Web Application Security Testing
 description: OWASP Top 10 testing, injection vulnerability detection, API security assessment, authentication testing, and web vulnerability reporting for authorized assessments
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, web-security, owasp, xss, sqli, api, pentest, burpsuite, authentication]
 ---

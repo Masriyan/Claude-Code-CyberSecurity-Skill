@@ -264,10 +264,10 @@ def main():
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--shift", required=True, choices=["day", "evening", "night"],
-                        help="Shift type")
-    parser.add_argument("--date", required=True,
-                        help="Shift date (YYYY-MM-DD)")
+    parser.add_argument("--shift", choices=["day", "evening", "night"],
+                        help="Shift type (required unless --demo)")
+    parser.add_argument("--date",
+                        help="Shift date (YYYY-MM-DD; required unless --demo)")
     parser.add_argument("--analyst", default="SOC Analyst",
                         help="Analyst name (default: 'SOC Analyst')")
     parser.add_argument("--alerts", "-a",
@@ -280,9 +280,20 @@ def main():
                         help="Use sample data to demo the report")
     args = parser.parse_args()
 
+    # --demo runs standalone with sample data, so --shift/--date are optional
+    # there and fall back to sensible values; they stay mandatory otherwise.
+    if args.demo:
+        shift = args.shift or "night"
+        date = args.date or datetime.now().strftime("%Y-%m-%d")
+    else:
+        missing = [name for name, value in (("--shift", args.shift), ("--date", args.date)) if not value]
+        if missing:
+            parser.error("the following arguments are required: " + ", ".join(missing))
+        shift, date = args.shift, args.date
+
     generator = ShiftReportGenerator(
-        shift=args.shift,
-        date=args.date,
+        shift=shift,
+        date=date,
         analyst=args.analyst,
         alerts_file=args.alerts,
     )

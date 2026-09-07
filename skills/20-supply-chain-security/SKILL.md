@@ -1,7 +1,7 @@
 ---
 name: Supply Chain Security
 description: Software supply chain security — SBOM generation and analysis, dependency confusion and typosquatting detection, malicious package indicators, CI/CD pipeline hardening, and artifact provenance/signing (SLSA, Sigstore)
-version: 1.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, supply-chain, sbom, sca, typosquatting, dependency-confusion, slsa, sigstore, ci-cd-security, provenance]
 ---

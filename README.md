@@ -3,8 +3,8 @@
   
   <img src="https://img.shields.io/badge/Claude%20Code-CyberSecurity%20Skills-red?style=for-the-badge" alt="Claude Code CyberSecurity Skills"/>
   <br/>
-  <img src="https://img.shields.io/badge/Skills-20-blue?style=flat-square" alt="Skills"/>
-  <img src="https://img.shields.io/badge/Version-3.0.0-orange?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/Skills-22-blue?style=flat-square" alt="Skills"/>
+  <img src="https://img.shields.io/badge/Version-3.1.0-orange?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"/>
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python"/>
   <img src="https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=flat-square" alt="Platform"/>
@@ -14,7 +14,7 @@
 
 # Claude Code CyberSecurity Skill Collection
 
-> **20 production-quality Claude Code Skills for cybersecurity professionals** — covering offensive security, defensive operations, reverse engineering, threat hunting, CSOC automation, AI/LLM security, mobile, OT/ICS, GRC, software supply chain security, and more. Version 3.0 — expanded coverage, sharper methodology, and stronger automation.
+> **22 production-quality Claude Code Skills for cybersecurity professionals** — covering offensive security, defensive operations, reverse engineering, threat hunting, threat intelligence, purple team / adversary emulation, CSOC automation, AI/LLM security, mobile, OT/ICS, GRC, software supply chain security, and more. Version 3.1 — expanded coverage, sharper methodology, and stronger automation.
 
 Transform Claude Code into your ultimate cybersecurity co-pilot. Each skill provides Claude with structured methodology, decision frameworks, ready-to-run commands, and output templates that enable precise, expert-level assistance for real-world security operations.
 
@@ -77,6 +77,8 @@ These skills are built around what **Claude does natively** in Claude Code:
 | 18 | [OT / ICS / SCADA Security](skills/18-ot-ics-security/) | Industrial | Purdue model, Modbus/DNP3/S7 analysis, IEC 62443, ATT&CK for ICS, safety-first methodology |
 | 19 | [GRC & Compliance](skills/19-grc-compliance/) | Governance | Risk scoring, NIST CSF 2.0/ISO 27001/SOC 2 mapping, gap analysis, audit evidence, policy generation |
 | 20 | [Supply Chain Security](skills/20-supply-chain-security/) | Supply Chain | SBOM generation/analysis, dependency confusion & typosquatting detection, CI/CD pipeline hardening, SLSA/Sigstore provenance |
+| 21 | [Threat Intelligence & CTI](skills/21-threat-intelligence/) | Threat Intel | Intelligence cycle, IOC extraction/defang/normalize, STIX/TAXII & MISP, Diamond/Kill Chain, source & confidence scoring, attribution, finished reporting |
+| 22 | [Purple Team & Adversary Emulation](skills/22-purple-team/) | Purple Team | Threat-informed emulation planning (ATT&CK, Atomic Red Team, CALDERA), detect–tune–validate loop, coverage measurement (Navigator/DeTT&CT), MTTD/coverage reporting |
 
 ---
 
@@ -154,6 +156,12 @@ claude
 
 # Supply Chain Security (Skill 20 activates)
 > Audit this repo for typosquatted dependencies and unpinned GitHub Actions
+
+# Threat Intelligence & CTI (Skill 21 activates)
+> Pull every IOC out of this report, defang them, and give me a STIX bundle marked TLP:AMBER
+
+# Purple Team & Adversary Emulation (Skill 22 activates)
+> We ran these atomic tests — score our detection coverage and rank the gaps as a Navigator layer
 ```
 
 You can also **explicitly name a skill**:
@@ -162,6 +170,17 @@ You can also **explicitly name a skill**:
 > Use the log-analysis skill to build a Sentinel KQL query for DCSync detection
 > Use the blue-team-defense skill to audit this Dockerfile
 ```
+
+---
+
+## What's New in v3.1
+
+**Two new domains and a reliability pass across the collection:**
+
+- **Skill 21 — Threat Intelligence & CTI** — the full intelligence cycle (PIRs → collection → analysis → dissemination), IOC extraction/defang/normalize/dedup with STIX 2.1 and MISP export, structured analytic models (Diamond, Kill Chain, ATT&CK, ACH), Admiralty source scoring and estimative-language confidence, attribution discipline, TLP marking, and finished intelligence reporting — with `cti_processor.py`.
+- **Skill 22 — Purple Team & Adversary Emulation** — threat-informed emulation planning (ATT&CK, Atomic Red Team, CALDERA, CTID library), the detect–tune–validate loop, detection-coverage measurement on the none/telemetry/detection/prevention ladder with an ATT&CK Navigator layer and MTTD/coverage-delta metrics, and a safety/authorization gate — with `detection_validator.py`.
+- **Fixes** — `report_generator.py --demo` now runs standalone (was rejected by required `--shift`/`--date`); CVSS ceiling-rounding, GHSA `MODERATE`→`MEDIUM` mapping, auth-log field extraction for anomaly chaining, and TLS expired-cert detection corrected (see [CHANGELOG](CHANGELOG.md)).
+- **Consistency** — every skill's `SKILL.md` version is now aligned at 3.1.0, and the marketplace manifest lists all 22 skills.
 
 ---
 
@@ -213,7 +232,9 @@ Claude-Code-CyberSecurity-Skill/
     ├── 17-mobile-security/       SKILL.md + scripts/ + examples/
     ├── 18-ot-ics-security/       SKILL.md + scripts/ + examples/
     ├── 19-grc-compliance/        SKILL.md + scripts/ + examples/
-    └── 20-supply-chain-security/ SKILL.md + scripts/ + examples/
+    ├── 20-supply-chain-security/ SKILL.md + scripts/ + examples/
+    ├── 21-threat-intelligence/   SKILL.md + scripts/ + examples/
+    └── 22-purple-team/           SKILL.md + scripts/ + examples/
 ```
 
 ---

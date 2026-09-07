@@ -1,7 +1,7 @@
 ---
 name: Threat Hunting & IOC Analysis
 description: IOC extraction, threat intelligence correlation, MITRE ATT&CK mapping, hunt hypothesis generation, and detection rule creation
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, threat-hunting, ioc, mitre-attack, threat-intelligence, sigma, detection, siem]
 ---

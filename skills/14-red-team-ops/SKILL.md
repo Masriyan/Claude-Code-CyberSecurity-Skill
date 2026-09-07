@@ -1,7 +1,7 @@
 ---
 name: Red Team Operations & Engagement Planning
 description: Authorized red team engagement planning, C2 architecture design, attack methodology, lateral movement strategy, OPSEC, and professional reporting
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, red-team, c2, lateral-movement, persistence, pentest, engagement, opsec]
 ---

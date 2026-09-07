@@ -1,7 +1,7 @@
 ---
 name: Cryptographic Analysis & Assessment
 description: SSL/TLS auditing, cipher suite analysis, hash algorithm identification, encryption implementation review, and cryptographic weakness detection in code
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, cryptography, ssl, tls, encryption, hashing, cipher, pki, post-quantum]
 ---

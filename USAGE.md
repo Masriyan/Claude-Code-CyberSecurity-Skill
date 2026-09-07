@@ -1,6 +1,6 @@
 # Usage Guide
 
-Comprehensive usage guide for the **Claude Code CyberSecurity Skill Collection v3.0**.
+Comprehensive usage guide for the **Claude Code CyberSecurity Skill Collection v3.1**.
 
 ---
 
@@ -30,7 +30,7 @@ Claude reads each file's YAML frontmatter to understand the skill's domain:
 ---
 name: Threat Hunting & IOC Analysis
 description: IOC extraction, MITRE ATT&CK mapping, threat hunting
-version: 2.0.0
+version: 3.1.0
 tags: [cybersecurity, threat-hunting, ioc, mitre-attack]
 ---
 ```
@@ -381,6 +381,34 @@ python skills/20-supply-chain-security/scripts/supply_chain_auditor.py --project
 python skills/20-supply-chain-security/scripts/supply_chain_auditor.py --project-dir . --check-registry -o audit.json
 ```
 
+### 21 — Threat Intelligence & CTI
+
+```
+> Pull every IOC out of this vendor report, defang them, and give me a STIX bundle
+> Score this source A–F/1–6 and tell me how much confidence the attribution deserves
+> Turn these indicators into a MISP event marked TLP:AMBER for our ISAC
+> Build a Diamond Model for this intrusion and map the observed behavior to ATT&CK
+```
+
+```bash
+python skills/21-threat-intelligence/scripts/cti_processor.py --demo
+python skills/21-threat-intelligence/scripts/cti_processor.py --input report.txt --tlp AMBER --source-score B2 --stix stix.json --misp event.json
+```
+
+### 22 — Purple Team & Adversary Emulation
+
+```
+> Build an emulation plan for FIN7 targeting our retail POS environment, mapped to ATT&CK
+> We ran these atomic tests — score our detection coverage and rank the gaps
+> Turn this results plan into a Navigator layer so I can show the coverage heatmap
+> Which techniques regressed since last quarter's purple-team engagement?
+```
+
+```bash
+python skills/22-purple-team/scripts/detection_validator.py --demo
+python skills/22-purple-team/scripts/detection_validator.py --plan results.json --navigator layer.json --output report.json
+```
+
 ---
 
 ## Chaining Skills Together
@@ -409,10 +437,21 @@ python skills/20-supply-chain-security/scripts/supply_chain_auditor.py --project
 ### Threat Intelligence Workflow
 
 ```
-1  threat-hunting  →  extract IOCs from intelligence reports
-2  malware-analysis →  analyze related samples
+1  threat-intelligence →  extract/normalize IOCs, score sources, produce STIX/MISP + assessment
+2  malware-analysis    →  analyze related samples
 3  reverse-engineering →  understand binary behavior
-4  blue-team-defense →  build detection rules from findings
+4  threat-hunting      →  hunt the environment for the actor's TTPs
+5  blue-team-defense   →  build detection rules from findings
+```
+
+### Purple Team Workflow
+
+```
+1  threat-intelligence →  pick the adversary and TTPs worth emulating
+2  purple-team         →  plan the emulation, map to ATT&CK
+3  red-team-ops        →  execute the offensive techniques (under RoE)
+4  log-analysis        →  write Sigma detections for the gaps found
+5  purple-team         →  re-test, score coverage delta, report MTTD
 ```
 
 ---
@@ -449,7 +488,15 @@ All scripts that exist and are validated to run:
 | `tls_auditor.py` | 13 | TLS/SSL certificate auditing |
 | `engagement_planner.py` | 14 | Red team engagement planning |
 | `hardening_checker.py` | 15 | System hardening verification |
+| `prompt_injection_tester.py` | 16 | LLM prompt-injection / jailbreak test harness |
+| `model_supply_chain.py` | 16 | ML model unsafe-`pickle` supply-chain scan |
+| `apk_analyzer.py` | 17 | Android APK static triage |
+| `ics_protocol_analyzer.py` | 18 | Industrial protocol analysis & exposure dorks |
+| `control_mapper.py` | 19 | Cross-framework control crosswalk |
+| `risk_register.py` | 19 | Risk register scoring (qualitative + ALE) |
 | `supply_chain_auditor.py` | 20 | Typosquat/floating-dependency & CI pipeline audit |
+| `cti_processor.py` | 21 | IOC extraction/defang/normalize + STIX/MISP export |
+| `detection_validator.py` | 22 | Purple-team detection-coverage scoring & Navigator layer |
 
 ---
 

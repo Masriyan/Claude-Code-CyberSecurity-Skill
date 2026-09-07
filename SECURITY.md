@@ -4,9 +4,10 @@
 
 | Version | Supported |
 | ------- | --------- |
-| 3.0.x   | Yes       |
-| 2.0.x   | Security fixes only — upgrade to v3.0 |
-| 1.0.x   | No — end of life, upgrade to v3.0 |
+| 3.1.x   | Yes       |
+| 3.0.x   | Security fixes only — upgrade to v3.1 |
+| 2.0.x   | No — end of life, upgrade to v3.1 |
+| 1.0.x   | No — end of life, upgrade to v3.1 |
 
 ---
 
@@ -101,7 +102,7 @@ Before using any tool or script in this collection, you must:
 4. Use offensive tools only in **isolated, controlled environments** when testing your own systems
 5. **Report vulnerabilities** discovered during authorized testing to the affected parties through responsible disclosure
 
-Skills with offensive capabilities (03-exploit-development, 14-red-team-ops) require authorization verification before Claude provides operational assistance. This is enforced in the SKILL.md authorization gates.
+Skills with offensive capabilities (03-exploit-development, 14-red-team-ops, and 22-purple-team, whose live-fire adversary emulation executes real attack techniques) require authorization verification before Claude provides operational assistance. This is enforced in the SKILL.md authorization gates. Skills 16-ai-llm-security and 18-ot-ics-security carry safety gates for the same reason. For purple team, planning, coverage analysis, and tabletop emulation need no live execution and remain available without an active engagement.
 
 ### Authorized Use Cases
 

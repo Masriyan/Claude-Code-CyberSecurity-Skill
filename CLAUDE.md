@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-This is a **content repository**, not an application. It publishes a Claude Code plugin — a collection of 20 `SKILL.md` files (in `skills/<NN-skill-name>/`) that teach Claude domain-specific cybersecurity methodology (recon, vuln scanning, exploit dev, RE, malware analysis, threat hunting, IR, network/web/cloud security, SOC automation, log analysis, crypto, red/blue team ops, AI/LLM security, mobile, OT/ICS, GRC, supply chain security). Each skill directory optionally ships standalone Python automation scripts and example usage docs that the SKILL.md references.
+This is a **content repository**, not an application. It publishes a Claude Code plugin — a collection of 22 `SKILL.md` files (in `skills/<NN-skill-name>/`) that teach Claude domain-specific cybersecurity methodology (recon, vuln scanning, exploit dev, RE, malware analysis, threat hunting, IR, network/web/cloud security, SOC automation, log analysis, crypto, red/blue team ops, AI/LLM security, mobile, OT/ICS, GRC, supply chain security, threat intelligence/CTI, purple team/adversary emulation). Each skill directory optionally ships standalone Python automation scripts and example usage docs that the SKILL.md references.
 
 There is no app to build, no test suite, and no CI pipeline defined in this repo — "development" here means writing/editing Markdown skill files and the Python scripts they call out to.
 
@@ -47,17 +47,17 @@ Every `SKILL.md` uses this structure (see CONTRIBUTING.md for the full template)
 ---
 name: Skill Name
 description: One-line description (Claude uses this for activation matching)
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, ...]
 ---
 ```
 followed by: **Activation Triggers** → **Prerequisites** → **Core Capabilities** (numbered methodology) → **Script Integration** (table of scripts + args) → **Output Template** (exact report/finding format Claude must reproduce) → **Skill Integration** (cross-links to other numbered skills, e.g. "Vulnerabilities confirmed → develop PoC → Skill 03") → **References**.
 
-New skills are added sequentially — the collection currently ends at 20, so the next one is 21.
+New skills are added sequentially — the collection currently ends at 22, so the next one is 23.
 
 Rules enforced by CONTRIBUTING.md that matter when editing:
-- **Never remove the authorization/legal-scope gates** from Skill 03 (Exploit Development) and Skill 14 (Red Team Operations), or the safety gates on Skill 16 (AI/LLM Security) and Skill 18 (OT/ICS Security) — these are load-bearing, not boilerplate.
+- **Never remove the authorization/legal-scope gates** from Skill 03 (Exploit Development), Skill 14 (Red Team Operations), and Skill 22 (Purple Team & Adversary Emulation), or the safety gates on Skill 16 (AI/LLM Security) and Skill 18 (OT/ICS Security) — these are load-bearing, not boilerplate.
 - Don't add speculative features outside a skill's domain; don't introduce external dependencies without a graceful fallback.
 - If you change a script's behavior, update the SKILL.md's Script Integration section (and `USAGE.md` if a script is added/renamed) in the same change.
 - Any Unreleased-worthy change should be logged under `CHANGELOG.md`'s `[Unreleased]` section.

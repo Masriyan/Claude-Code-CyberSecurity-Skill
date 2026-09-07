@@ -41,7 +41,7 @@ Only create `examples/` or `resources/` directories when the content genuinely a
 
 ### SKILL.md Template (v3.0 Format)
 
-New skills are numbered sequentially — the collection currently ends at **20 (Supply Chain Security)**, so the next contribution would be **21**. Every SKILL.md must follow the v3.0 structure (unchanged from v2.0):
+New skills are numbered sequentially — the collection currently ends at **22 (Purple Team & Adversary Emulation)**, so the next contribution would be **23**. Every SKILL.md must follow the v3.0 structure (unchanged from v2.0):
 - **Activation Triggers** — explicit phrases that cause Claude to load the skill
 - **Authorization Gates** — mandatory for any offensive capability
 - **Output Templates** — exact formats Claude uses for reports and artifacts
@@ -51,7 +51,7 @@ New skills are numbered sequentially — the collection currently ends at **20 (
 ---
 name: Your Skill Name
 description: One-line description (Claude uses this for matching)
-version: 3.0.0
+version: 3.1.0
 tags: [cybersecurity, relevant, tags]
 ---
 
@@ -128,7 +128,7 @@ Focus areas where contributions are most valuable:
 - **Documentation** — clearer examples, better explanations
 
 Do NOT:
-- Remove authorization gates from Skills 03 and 14
+- Remove the authorization gates from Skills 03, 14, and 22, or the safety gates on Skills 16 and 18 — these are load-bearing, not boilerplate
 - Add speculative features that don't align with the skill's domain
 - Introduce external dependencies without a graceful fallback
 

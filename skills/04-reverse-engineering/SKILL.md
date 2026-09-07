@@ -1,7 +1,7 @@
 ---
 name: Reverse Engineering & Binary Analysis
 description: Binary analysis, assembly interpretation, disassembly, decompilation, firmware RE, and protocol reverse engineering
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, reverse-engineering, binary-analysis, disassembly, firmware, assembly, ctf]
 ---

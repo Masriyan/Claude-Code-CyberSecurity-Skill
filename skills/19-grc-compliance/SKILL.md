@@ -1,7 +1,7 @@
 ---
 name: GRC & Compliance
 description: Governance, risk, and compliance — risk assessment and scoring, control mapping across NIST CSF 2.0 / ISO 27001:2022 / SOC 2 / CIS Controls v8, gap analysis, audit evidence preparation, and security policy generation
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, grc, compliance, risk-management, nist-csf, iso27001, soc2, cis-controls, audit, policy]
 ---

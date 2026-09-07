@@ -9,10 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- **Skill 20 — Supply Chain Security** — SBOM generation/analysis (CycloneDX/SPDX), dependency confusion & typosquatting detection, malicious package lifecycle-script indicators, CI/CD (GitHub Actions) pipeline hardening, and artifact provenance/signing guidance (SLSA, Sigstore/cosign, in-toto, npm provenance), with `supply_chain_auditor.py` for the automatable static checks
+_Nothing yet._
+
+---
+
+## [3.1.0] — 2026-09-07
+
+### Added — Two New Domains
+- **Skill 21 — Threat Intelligence & CTI** — the full intelligence cycle (PIRs → collection → processing → analysis → dissemination → feedback), IOC extraction/refang/normalize/dedup, structured analytic models (Diamond Model, Cyber Kill Chain, ATT&CK, Analysis of Competing Hypotheses), Admiralty source-reliability scoring and estimative-language confidence, actor/campaign tracking with attribution discipline, TLP 2.0 marking, and finished intelligence reporting. Ships `cti_processor.py`, which extracts IPv4/IPv6/domains/URLs/emails/hashes/CVEs/ASNs/crypto addresses, canonicalizes and drops noise, and exports STIX 2.1 bundles and MISP-style events with TLP and Admiralty scoring.
+- **Skill 22 — Purple Team & Adversary Emulation** — collaborative engagement models (tabletop → micro → full-campaign → BAS), threat-informed emulation planning against ATT&CK (Atomic Red Team, CALDERA, CTID library), the detect–tune–validate loop, detection-coverage measurement on the none/telemetry/detection/prevention ladder, safe execution and deconfliction, and MTTD/coverage-delta reporting — behind a safety/authorization gate. Ships `detection_validator.py`, which scores an emulation results plan (JSON/YAML) into a per-tactic coverage matrix, detection/prevention rates, MTTD, a prioritized gap list, an ATT&CK Navigator layer, and a coverage delta vs. a prior engagement.
+- **Skill 20 — Supply Chain Security** (previously unreleased) — SBOM generation/analysis (CycloneDX/SPDX), dependency confusion & typosquatting detection, malicious package lifecycle-script indicators, CI/CD (GitHub Actions) pipeline hardening, and artifact provenance/signing guidance (SLSA, Sigstore/cosign, in-toto, npm provenance), with `supply_chain_auditor.py` for the automatable static checks.
+
+### Changed
+- **All SKILL.md versions** — aligned at **3.1.0** (Skill 20 was still at 1.0.0; the rest at 3.0.0), restoring the lockstep-versioning convention.
+- **`.claude-plugin/marketplace.json`** — bumped to 3.1.0 and now lists all 22 skills.
+- **README / USAGE / INSTALL / CLAUDE / CONTRIBUTING / SECURITY** — updated for 22 skills, v3.1, the two new domains, and the new authorization gate on Skill 22. The USAGE "Standalone Script Reference" table now lists every shipped script (Skills 16–19 scripts were previously missing) plus the two new ones.
 
 ### Fixed
+- **Skill 11** — `report_generator.py --demo` was rejected by argparse before it could run: `--shift` and `--date` were `required=True`, so the documented `--demo` smoke test (which supplies its own sample data) always exited with an error. `--shift`/`--date` are now optional under `--demo` (defaulting to `night` and today's date) and still enforced as required in normal use.
 - **Skill 12** — `log_parser.py`/`anomaly_detector.py`: chaining these two tools exactly as this module's own docstring instructs ("Works on JSON output from log_parser.py") silently found zero anomalies on real auth_log input, no matter how anomalous. `log_parser.py`'s syslog/auth_log regex only captured timestamp/hostname/process/pid/message and never populated `src_ip`/`user`/`status`, which `anomaly_detector.py`'s brute-force/after-hours/lateral-movement detectors default to and require. Added auth_log message sub-parsing in `log_parser.py` to extract those three fields for common SSH/PAM message shapes (Failed/Accepted password, Invalid user).
 - **Skill 13** — `tls_auditor.py`: the expired-certificate detail path was dead code for real expired certificates. `ssl.create_default_context()` raises `SSLCertVerificationError` at `wrap_socket()` *before* the expiry computation runs, so `cert_info["expired"]` never got set for a genuinely expired cert -- only the generic "Certificate validation failed" HIGH finding fired, and the dedicated CRITICAL "Certificate expired" branch in `_assess_vulnerabilities`/`_calculate_grade` was unreachable. Now re-checks expiry via an unverified connection (using the optional `cryptography` package, with a graceful skip if it's not installed) after a verification failure, so both findings fire correctly.
 - **Skill 02** — `cvss_calculator.py`: `round_up()` used ordinary round-half-up instead of the CVSS spec's mandatory ceiling rounding, systematically under-scoring vulnerabilities whose raw score wasn't an exact tenth (verified wrong on CVE-2021-3156: computed 7.7 instead of the correct 7.8)

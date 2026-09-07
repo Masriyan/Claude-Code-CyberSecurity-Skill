@@ -1,7 +1,7 @@
 ---
 name: Log Analysis & SIEM Integration
 description: Security log parsing, anomaly detection, SIEM query building, Sigma rule creation, and correlation rule development across Splunk, Elastic, QRadar, and Microsoft Sentinel
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, log-analysis, siem, splunk, elastic, sentinel, sigma, anomaly-detection, correlation]
 ---

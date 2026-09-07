@@ -1,7 +1,7 @@
 ---
 name: Network Security & Traffic Analysis
 description: Network traffic analysis, PCAP parsing, IDS/IPS rule creation, firewall configuration auditing, and network anomaly detection
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, network, traffic-analysis, pcap, ids, ips, firewall, snort, suricata, zeek]
 ---

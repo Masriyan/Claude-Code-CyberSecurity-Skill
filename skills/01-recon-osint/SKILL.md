@@ -1,7 +1,7 @@
 ---
 name: Reconnaissance & OSINT Automation
 description: Passive and active reconnaissance, subdomain enumeration, DNS analysis, technology fingerprinting, and OSINT data correlation for authorized security assessments
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, reconnaissance, osint, enumeration, dns, subdomain, fingerprinting]
 ---

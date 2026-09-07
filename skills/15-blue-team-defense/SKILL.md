@@ -1,7 +1,7 @@
 ---
 name: Blue Team Defense & Hardening
 description: System hardening, detection engineering, security baseline monitoring, patch management, defense-in-depth architecture, and security posture improvement
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, blue-team, defense, hardening, detection, baseline, siem, endpoint, cis]
 ---

@@ -1,7 +1,7 @@
 ---
 name: CSOC Operations & Playbook Automation
 description: SOC alert triage, incident playbook automation, escalation workflows, shift reporting, and SOC KPI tracking
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, csoc, soc, automation, playbook, triage, alert, operations, siem]
 ---

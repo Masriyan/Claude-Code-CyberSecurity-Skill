@@ -1,7 +1,7 @@
 ---
 name: AI & LLM Security
 description: LLM and AI application security testing — prompt injection, jailbreak resistance, OWASP LLM Top 10 (2025), RAG and agent/tool-use security, model supply chain, and AI red teaming for authorized assessments
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, ai-security, llm, prompt-injection, owasp-llm, agent-security, rag, mlsecops, red-teaming]
 ---

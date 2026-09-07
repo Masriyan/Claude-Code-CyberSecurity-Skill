@@ -1,6 +1,6 @@
 # Installation Guide
 
-Complete installation instructions for the **Claude Code CyberSecurity Skill Collection v3.0**.
+Complete installation instructions for the **Claude Code CyberSecurity Skill Collection v3.1**.
 
 ---
 
@@ -48,8 +48,8 @@ source venv/bin/activate       # Linux/macOS
 # venv\Scripts\activate        # Windows
 
 # Install optional dependencies for enhanced script functionality
-pip install requests           # Skills 01, 09 (HTTP requests)
-pip install pyyaml             # Skills 02, 09, 11 (YAML OpenAPI specs)
+pip install requests           # Skills 01, 09, 20, 21 (HTTP requests / IOC enrichment)
+pip install pyyaml             # Skills 02, 09, 11, 20, 22 (YAML specs / plans)
 pip install boto3              # Skill 10 (AWS SDK — alternative to AWS CLI)
 pip install yara-python        # Skill 05 (YARA rule compilation)
 pip install scapy              # Skill 08 (PCAP analysis)
@@ -80,7 +80,7 @@ When a session starts, Claude reads each `SKILL.md` file's YAML frontmatter (nam
 mkdir -p ~/.claude/skills
 cp -r skills/* ~/.claude/skills/
 
-# Verify — should list 19 directories
+# Verify — should list 22 directories
 ls ~/.claude/skills/
 ```
 
@@ -114,7 +114,7 @@ ln -s "$(pwd)/skills/"* ~/.claude/skills/
 ### Check Files Are in Place
 
 ```bash
-# Count SKILL.md files — should output 19
+# Count SKILL.md files — should output 22
 find ~/.claude/skills/ -name "SKILL.md" | wc -l
 
 # Verify YAML frontmatter on a sample skill
@@ -132,7 +132,7 @@ python3 ~/.claude/skills/02-vulnerability-scanner/scripts/cvss_calculator.py \
 
 # Anomaly detector demo
 python3 ~/.claude/skills/12-log-analysis/scripts/anomaly_detector.py --demo
-# Expected: 11 anomalies detected in sample data
+# Expected: 5 anomalies detected in sample data (incl. brute-force from 10.0.0.1)
 
 # SOC report demo
 python3 ~/.claude/skills/11-csoc-automation/scripts/report_generator.py \

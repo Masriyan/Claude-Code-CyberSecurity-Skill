@@ -1,7 +1,7 @@
 ---
 name: OT / ICS / SCADA Security
 description: Operational Technology and industrial control system security — Purdue model segmentation, industrial protocol analysis (Modbus, DNP3, S7, EtherNet/IP), PLC/HMI exposure, IEC 62443 alignment, and MITRE ATT&CK for ICS, for authorized and safety-conscious assessments
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, ot-security, ics, scada, modbus, dnp3, plc, iec62443, attack-ics, purdue-model]
 ---

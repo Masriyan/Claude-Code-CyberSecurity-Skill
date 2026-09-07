@@ -1,7 +1,7 @@
 ---
 name: Mobile Application Security
 description: Android and iOS application security testing — static and dynamic analysis, APK/IPA inspection, OWASP MASVS/MASTG verification, secure-storage and transport review, and mobile malware triage for authorized assessments
-version: 3.0.0
+version: 3.1.0
 author: Masriyan
 tags: [cybersecurity, mobile-security, android, ios, masvs, mastg, apk, ipa, frida, reverse-engineering]
 ---
