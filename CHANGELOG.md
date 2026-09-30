@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet._
+### Fixed
+- **Plugin manifest** — `.claude-plugin/marketplace.json` did not list Skill 21 (Threat Intelligence & CTI) or Skill 22 (Purple Team & Adversary Emulation), so plugin installs only loaded 20 of the 22 skills. Both are now registered and the plugin description reflects 22 skills.
 
 ---
 
