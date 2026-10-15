@@ -1,0 +1,39 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local secrets (keep example configuration tracked)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Test, coverage, and benchmark output
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+junit.xml
+benchmark-results/
+/bandit-skills.json
+
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+
+# Editor and OS artifacts
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
