@@ -18,6 +18,11 @@ import sys
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
+from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from cyberskill.indicators import observable_bundle, refang
 
 try:
     import requests
@@ -67,28 +72,6 @@ KILL_CHAIN_HINTS = {
     "command-and-control": ["c2", "c&c", "beacon", "callback", "command and control"],
     "actions-on-objectives": ["exfil", "ransom", "encrypt", "steal", "destroy"],
 }
-
-
-def refang(text: str) -> str:
-    """Convert common defanged notations back to canonical form for parsing."""
-    replacements = [
-        (r"h(?:xx|XX)p", "http"),
-        (r"\[\.\]", "."),
-        (r"\(\.\)", "."),
-        (r"\{\.\}", "."),
-        (r"\[dot\]", "."),
-        (r"\(dot\)", "."),
-        (r"\s+dot\s+", "."),
-        (r"\[@\]", "@"),
-        (r"\[at\]", "@"),
-        (r"\(at\)", "@"),
-        (r"\[:\]", ":"),
-        (r"\[//\]", "//"),
-    ]
-    out = text
-    for pat, repl in replacements:
-        out = re.sub(pat, repl, out, flags=re.IGNORECASE)
-    return out
 
 
 def defang(value: str, ioc_type: str) -> str:
@@ -176,7 +159,13 @@ class CTIProcessor:
                     "value": normalized,
                     "defanged": defang(normalized, ioc_type),
                     "kill_chain_phase": _guess_phase(clean, span),
-                    "confidence": _confidence_for(ioc_type),
+                    "extraction_confidence": _confidence_for(ioc_type),
+                    "maliciousness_confidence": None,
+                    "source_reliability": self.source_score,
+                    "contextual_relevance": "unverified",
+                    "detection_readiness": "needs-review",
+                    "epistemic_status": "observed",
+                    "phase_status": "inferred",
                     "tlp": self.tlp,
                     "source_score": self.source_score,
                     "first_seen": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -205,6 +194,8 @@ class CTIProcessor:
             return value
         if ioc_type == "ipv6":
             try:
+                if not self.keep_noise and _is_noise_ip(value):
+                    return None
                 return str(ipaddress.ip_address(value))
             except ValueError:
                 return None
@@ -217,53 +208,31 @@ class CTIProcessor:
             lowered = value.lower()
             host = lowered
             if ioc_type == "url":
-                host = re.sub(r"^https?://", "", lowered).split("/")[0].split(":")[0]
+                try:
+                    parts = urlsplit(value)
+                    host = (parts.hostname or "").lower()
+                    if not host or parts.username is not None:
+                        return None
+                    port = parts.port
+                except ValueError:
+                    return None
+                netloc = f"[{host}]" if ":" in host else host
+                if port is not None:
+                    netloc += f":{port}"
+                value = urlunsplit((parts.scheme.lower(), netloc, parts.path, parts.query, parts.fragment))
             # A bare dotted-quad is an IP, not a domain — let the ip pattern own it.
             if ioc_type == "domain" and _valid_ipv4(host):
                 return None
             if not self.keep_noise and host in DOC_DOMAINS:
                 return None
-            return lowered.rstrip("/") if ioc_type == "url" else lowered
+            return value if ioc_type == "url" else lowered
         return value
 
     # ----- Exports -------------------------------------------------------
 
     def to_stix(self) -> Dict[str, Any]:
-        """Build a minimal STIX 2.1 bundle of indicator SDOs + a TLP marking."""
-        marking_id = f"marking-definition--{uuid.uuid4()}"
-        objects: List[Dict[str, Any]] = [{
-            "type": "marking-definition",
-            "spec_version": "2.1",
-            "id": marking_id,
-            "created": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-            "definition_type": "tlp",
-            "name": f"TLP:{self.tlp}",
-        }]
-        stix_type_map = {
-            "ipv4": "ipv4-addr", "ipv6": "ipv6-addr", "domain": "domain-name",
-            "url": "url", "email": "email-addr", "md5": "file", "sha1": "file",
-            "sha256": "file",
-        }
-        for ind in self.indicators:
-            pattern = self._stix_pattern(ind, stix_type_map)
-            if pattern is None:
-                continue
-            now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-            objects.append({
-                "type": "indicator",
-                "spec_version": "2.1",
-                "id": f"indicator--{uuid.uuid4()}",
-                "created": now,
-                "modified": now,
-                "name": f"{ind['type']}: {ind['value']}",
-                "pattern": pattern,
-                "pattern_type": "stix",
-                "valid_from": ind["first_seen"],
-                "confidence": {"low": 15, "medium": 50, "high": 85}[ind["confidence"]],
-                "object_marking_refs": [marking_id],
-                "labels": ["malicious-activity"],
-            })
-        return {"type": "bundle", "id": f"bundle--{uuid.uuid4()}", "objects": objects}
+        """Export observables with TLP 2.0 statement markings; no threat verdict."""
+        return observable_bundle(self.indicators, self.tlp)
 
     @staticmethod
     def _stix_pattern(ind: Dict[str, Any], type_map: Dict[str, str]) -> Optional[str]:
@@ -294,15 +263,15 @@ class CTIProcessor:
             else "Payload delivery" if ind["type"] in ("md5", "sha1", "sha256")
             else "External analysis",
             "value": ind["value"],
-            "to_ids": ind["confidence"] != "low",
+            "to_ids": False,
             "comment": f"kill-chain={ind['kill_chain_phase'] or 'unknown'} "
-                       f"confidence={ind['confidence']}",
+                       f"extraction_confidence={ind['extraction_confidence']}; maliciousness=unknown",
         } for ind in self.indicators]
         return {
             "Event": {
                 "info": "CTI Processor extracted indicators",
                 "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-                "threat_level_id": "2",
+                "threat_level_id": "4",
                 "analysis": "1",
                 "distribution": "0",
                 "Tag": [{"name": f'tlp:{self.tlp.lower()}'}],
@@ -342,7 +311,7 @@ class CTIProcessor:
         lines.append("")
         for ind in self.indicators:
             phase = ind["kill_chain_phase"] or "-"
-            lines.append(f"  [{ind['confidence']:<6}] {ind['type']:<8} "
+            lines.append(f"  [extraction={ind['extraction_confidence']:<6}] {ind['type']:<8} "
                          f"{ind['defanged']}  ({phase})")
         return "\n".join(lines)
 

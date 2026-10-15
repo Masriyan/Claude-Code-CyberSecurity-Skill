@@ -17,6 +17,8 @@ import argparse
 import json
 import logging
 import sys
+import math
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 try:
@@ -88,11 +90,19 @@ def load_plan(path: str) -> List[Dict[str, Any]]:
 
 
 def _normalize_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
+    if not isinstance(entry, dict):
+        raise ValueError("each result must be an object")
+    if not re.fullmatch(r"T\d{4}(?:\.\d{3})?", str(entry.get("technique_id", ""))):
+        raise ValueError("invalid or missing technique_id")
+    if not isinstance(entry.get("executed", True), bool):
+        raise ValueError("executed must be a boolean")
+    ttd = entry.get("time_to_detect_seconds")
+    if ttd is not None and (isinstance(ttd, bool) or not isinstance(ttd, (int, float))
+                            or not math.isfinite(ttd) or ttd < 0):
+        raise ValueError("time_to_detect_seconds must be finite and non-negative")
     outcome = str(entry.get("outcome", "none")).lower().strip()
     if outcome not in OUTCOME_RANK:
-        logger.warning("Unknown outcome %r for %s — treating as 'none'",
-                       outcome, entry.get("technique_id", "?"))
-        outcome = "none"
+        raise ValueError(f"unknown outcome: {outcome}")
     return {
         "technique_id": entry.get("technique_id", "?"),
         "technique": entry.get("technique", ""),
@@ -164,7 +174,7 @@ class DetectionValidator:
         order = {"High": 0, "Medium": 1, "Low": 2}
         return sorted(gaps, key=lambda g: order[g["priority"]])
 
-    def navigator_layer(self, name: str = "Purple Team Coverage") -> Dict[str, Any]:
+    def navigator_layer(self, name: str = "Purple Team Coverage", attack_version: str = "15") -> Dict[str, Any]:
         """Build an ATT&CK Navigator (v4.5) layer colored by outcome."""
         techniques = [{
             "techniqueID": e["technique_id"],
@@ -175,7 +185,7 @@ class DetectionValidator:
         } for e in self.entries if e["executed"]]
         return {
             "name": name,
-            "versions": {"attack": "15", "navigator": "4.9.1", "layer": "4.5"},
+            "versions": {"attack": attack_version, "navigator": "4.9.1", "layer": "4.5"},
             "domain": "enterprise-attack",
             "description": "Coverage from purple-team emulation results",
             "techniques": techniques,
@@ -229,6 +239,7 @@ def main() -> int:
     parser.add_argument("--plan", "-p", help="Emulation results plan (JSON or YAML)")
     parser.add_argument("--baseline", "-b", help="Prior engagement plan to diff coverage against")
     parser.add_argument("--navigator", help="Write an ATT&CK Navigator layer to this path")
+    parser.add_argument("--attack-version", default="15", help="Target ATT&CK release (legacy default: 15)")
     parser.add_argument("--output", "-o", help="Write the full score report as JSON")
     parser.add_argument("--demo", action="store_true", help="Run against a bundled sample plan")
     args = parser.parse_args()
@@ -245,7 +256,10 @@ def main() -> int:
         parser.error("provide --plan <file> or --demo")
         return 2  # unreachable; parser.error exits
 
-    validator = DetectionValidator(plan)
+    try:
+        validator = DetectionValidator(plan)
+    except ValueError as exc:
+        parser.error(str(exc))
     score = validator.score()
 
     baseline_score = None
@@ -259,7 +273,7 @@ def main() -> int:
 
     if args.navigator:
         with open(args.navigator, "w", encoding="utf-8") as fh:
-            json.dump(validator.navigator_layer(), fh, indent=2)
+            json.dump(validator.navigator_layer(attack_version=args.attack_version), fh, indent=2)
         logger.info("Navigator layer written to %s", args.navigator)
     if args.output:
         report = {"score": score, "entries": validator.entries}
