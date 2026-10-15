@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CyberSkill artifact provenance v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "source", "sha256", "producer", "mode", "collected_at", "epistemic_status", "maliciousness", "validation"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "source": {"type": "string", "minLength": 1},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "producer": {"type": "string", "minLength": 1},
+    "mode": {"enum": ["offline", "passive", "authorized-active", "simulation"]},
+    "collected_at": {"type": "string", "format": "date-time"},
+    "epistemic_status": {"enum": ["observed", "inferred", "unverified"]},
+    "maliciousness": {"enum": ["unknown", "benign", "malicious"]},
+    "validation": {"type": "string", "minLength": 1}
+  }
+}

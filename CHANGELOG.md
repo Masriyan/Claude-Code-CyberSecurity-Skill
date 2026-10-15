@@ -9,7 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+- Reproducible `make check`, pytest regression suite, Ruff correctness checks, scoped
+  Bandit gate, and Python 3.10/3.12 GitHub Actions with a legacy security-scan artifact.
+- Shared IOC refanging/STIX export and versioned file-provenance schema/CLI.
+- Evidence contract distinguishing observed, inferred, and unverified findings in all 22 skills.
+
+### Fixed
+- Actual marketplace membership (20 entries) now matches the 22 on-disk skills.
+- Agent Skills-compatible names and string metadata; draft version aligned at 3.2.0.
+- CTI extraction confidence no longer implies maliciousness or MISP detection readiness.
+- STIX UUIDs, SCO objects, hash names, and TLP 2.0 statement markings.
+- Refanging before IOC matching, URL path/query case preservation, text-only input diagnostics.
+- DNS CLI help available without dnspython; strict purple-team result validation.
+- Threat-hunting examples now use supported CLI arguments; configurable Navigator ATT&CK version.
+
+### Migration
+- Read [quality and migration notes](docs/QUALITY.md) for output changes, test scope,
+  legacy limitations, and the remaining expansion/orchestration roadmap.
 
 ---
 

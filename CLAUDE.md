@@ -6,11 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **content repository**, not an application. It publishes a Claude Code plugin — a collection of 22 `SKILL.md` files (in `skills/<NN-skill-name>/`) that teach Claude domain-specific cybersecurity methodology (recon, vuln scanning, exploit dev, RE, malware analysis, threat hunting, IR, network/web/cloud security, SOC automation, log analysis, crypto, red/blue team ops, AI/LLM security, mobile, OT/ICS, GRC, supply chain security, threat intelligence/CTI, purple team/adversary emulation). Each skill directory optionally ships standalone Python automation scripts and example usage docs that the SKILL.md references.
 
-There is no app to build, no test suite, and no CI pipeline defined in this repo — "development" here means writing/editing Markdown skill files and the Python scripts they call out to.
+Quality gates run through `make check`: pytest, frontmatter/packaging checks, all-script CLI smoke tests, STIX validation, Ruff correctness checks, and Bandit on shared infrastructure. GitHub Actions runs the checks on Python 3.10 and 3.12.
 
 ## Commands
 
-Scripts are standalone (no shared package, no `requirements.txt` at repo root — each script declares its own imports and degrades gracefully if optional deps are missing).
+Keep the full plugin checkout: IOC scripts import the root `cyberskill` shared package. Install development dependencies with `python -m pip install -r requirements-dev.txt`.
 
 ```bash
 # Syntax-check a script after editing it
@@ -26,7 +26,7 @@ python3 skills/<NN-skill-name>/scripts/<tool>.py --demo
 python3 -c "import json; json.load(open('/tmp/test.json'))"
 ```
 
-There is no linter or test runner configured — `py_compile` + `--help` + manual JSON validation (above) is the full verification loop used in this repo (see CONTRIBUTING.md).
+Run `make check` before submitting changes. Legacy-script Bandit findings are uploaded for review; they are not a claim of a clean full-repository security audit.
 
 ## Repository structure
 
@@ -45,11 +45,13 @@ Every `SKILL.md` uses this structure (see CONTRIBUTING.md for the full template)
 
 ```yaml
 ---
-name: Skill Name
+name: 23-your-skill-name
 description: One-line description (Claude uses this for activation matching)
-version: 3.1.0
-author: Masriyan
-tags: [cybersecurity, ...]
+license: MIT
+metadata:
+  version: "3.2.0"
+  author: Masriyan
+  tags: cybersecurity
 ---
 ```
 followed by: **Activation Triggers** → **Prerequisites** → **Core Capabilities** (numbered methodology) → **Script Integration** (table of scripts + args) → **Output Template** (exact report/finding format Claude must reproduce) → **Skill Integration** (cross-links to other numbered skills, e.g. "Vulnerabilities confirmed → develop PoC → Skill 03") → **References**.

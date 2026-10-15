@@ -1,0 +1,7 @@
+pytest>=8,<10
+ruff>=0.11,<1
+bandit>=1.8,<2
+PyYAML>=6,<7
+jsonschema>=4.23,<5
+stix2>=3,<4
+stix2-validator==3.2.0

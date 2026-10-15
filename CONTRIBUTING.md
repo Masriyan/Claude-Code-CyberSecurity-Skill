@@ -49,10 +49,12 @@ New skills are numbered sequentially — the collection currently ends at **22 (
 
 ```yaml
 ---
-name: Your Skill Name
+name: 23-your-skill-name
 description: One-line description (Claude uses this for matching)
-version: 3.1.0
-tags: [cybersecurity, relevant, tags]
+license: MIT
+metadata:
+  version: "3.2.0"
+  tags: cybersecurity, relevant, tags
 ---
 
 # Your Skill Name
@@ -164,6 +166,11 @@ except ImportError:
 - No emoji in output unless explicitly part of a report template
 
 ### Testing a Script
+
+Install `requirements-dev.txt` and run `make check`. Names must match their directory
+and use lowercase letters, digits, and hyphens. Metadata values are strings.
+Add behavioral regression cases for changes; CLI help tests alone do not validate
+security findings. See `docs/QUALITY.md` for verification scope and outstanding work.
 
 ```bash
 # Syntax check

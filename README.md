@@ -14,6 +14,17 @@
 
 # Claude Code CyberSecurity Skill Collection
 
+[![SkillProof — tested Claude skill](https://skillproof.dev/badge/reconnaissance-osint-automation.svg)](https://skillproof.dev/skills/reconnaissance-osint-automation)
+
+## Engineering quality — 3.2 foundation
+
+Run `python -m pip install -r requirements-dev.txt` followed by `make check`.
+The automated suite covers packaging/frontmatter, all 35 script CLI interfaces,
+IOC/STIX regressions, purple-team input validation, and file provenance.
+See [quality and migration notes](docs/QUALITY.md) for exact scope, output changes,
+and the Evidence Engine roadmap. Activation and detection-accuracy targets are
+not yet measured benchmarks.
+
 > **22 production-quality Claude Code Skills for cybersecurity professionals** — covering offensive security, defensive operations, reverse engineering, threat hunting, threat intelligence, purple team / adversary emulation, CSOC automation, AI/LLM security, mobile, OT/ICS, GRC, software supply chain security, and more. Version 3.1 — expanded coverage, sharper methodology, and stronger automation.
 
 Transform Claude Code into your ultimate cybersecurity co-pilot. Each skill provides Claude with structured methodology, decision frameworks, ready-to-run commands, and output templates that enable precise, expert-level assistance for real-world security operations.
