@@ -27,8 +27,7 @@ try:
     import dns.query
     import dns.zone
 except ImportError:
-    print("[!] 'dnspython' module required: pip install dnspython")
-    sys.exit(1)
+    dns = None
 
 
 logging.basicConfig(
@@ -273,6 +272,8 @@ def main():
         "--verbose", "-v", action="store_true", help="Enable verbose/debug output"
     )
     args = parser.parse_args()
+    if dns is None:
+        parser.error("dnspython required: pip install dnspython")
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)

@@ -19,8 +19,7 @@ try:
     import dns.zone
     import dns.reversename
 except ImportError:
-    print("[!] 'dnspython' module required: pip install dnspython")
-    sys.exit(1)
+    dns = None
 
 logging.basicConfig(
     level=logging.INFO,
@@ -219,6 +218,8 @@ def main():
     parser.add_argument("--check-zone-transfer", action="store_true", default=True, help="Test zone transfers")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
+    if dns is None:
+        parser.error("dnspython required: pip install dnspython")
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
