@@ -15,6 +15,10 @@ import re
 import sys
 import time
 from typing import Any, Dict, List, Set
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from cyberskill.indicators import observable_bundle, refang
 
 logging.basicConfig(
     level=logging.INFO,
@@ -82,6 +86,7 @@ class IOCExtractor:
         logger.info("[IOC] Extracting indicators from text (%d chars)", len(text))
 
         results: Dict[str, List[str]] = {}
+        text = refang(text)
 
         for ioc_type, pattern in IOC_PATTERNS.items():
             matches = set(pattern.findall(text))
@@ -159,45 +164,10 @@ class IOCExtractor:
 
     def to_stix(self, results: Dict[str, Any]) -> Dict:
         """Convert results to STIX 2.1 bundle format."""
-        objects = []
-        stix_type_map = {
-            "ipv4": "ipv4-addr",
-            "ipv6": "ipv6-addr",
-            "domain": "domain-name",
-            "url": "url",
-            "email": "email-addr",
-            "md5": "file",
-            "sha1": "file",
-            "sha256": "file",
-        }
-
-        for ioc_type, values in results.get("indicators", {}).items():
-            stix_type = stix_type_map.get(ioc_type)
-            if not stix_type:
-                continue
-            for value in values:
-                if stix_type == "file":
-                    obj = {
-                        "type": "file",
-                        "hashes": {ioc_type.upper(): value},
-                    }
-                elif stix_type == "ipv4-addr":
-                    obj = {"type": "ipv4-addr", "value": value}
-                elif stix_type == "domain-name":
-                    obj = {"type": "domain-name", "value": value}
-                elif stix_type == "url":
-                    obj = {"type": "url", "value": value}
-                elif stix_type == "email-addr":
-                    obj = {"type": "email-addr", "value": value}
-                else:
-                    continue
-                objects.append(obj)
-
-        return {
-            "type": "bundle",
-            "id": f"bundle--{time.strftime('%Y%m%d%H%M%S')}",
-            "objects": objects,
-        }
+        return observable_bundle([
+            {"type": kind, "value": value}
+            for kind, values in results.get("indicators", {}).items() for value in values
+        ])
 
 
 def main():
@@ -216,8 +186,13 @@ def main():
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    with open(args.input, "r", errors="ignore") as f:
-        text = f.read()
+    try:
+        raw = Path(args.input).read_bytes()
+        if raw.startswith(b"%PDF") or b"\x00" in raw:
+            parser.error("input must be UTF-8 text; extract PDF/document text first")
+        text = raw.decode("utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        parser.error(str(exc))
 
     extractor = IOCExtractor(defang=args.defang, include_private_ips=args.include_private)
     results = extractor.extract(text)
