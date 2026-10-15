@@ -15,6 +15,7 @@
 # Claude Code CyberSecurity Skill Collection
 
 [![SkillProof — tested Claude skill](https://skillproof.dev/badge/reconnaissance-osint-automation.svg)](https://skillproof.dev/skills/reconnaissance-osint-automation)
+[![Security: A — Skills Directory](https://www.skillsdirectory.com/api/skills/masriyan-18-ot-ics-security/badge)](https://www.skillsdirectory.com/skills/masriyan-18-ot-ics-security)
 
 ## Engineering quality — 3.2 foundation
 
