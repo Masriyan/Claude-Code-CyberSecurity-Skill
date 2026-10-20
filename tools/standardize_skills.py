@@ -35,7 +35,7 @@ def main() -> None:
             if key in old:
                 value = old[key]
                 metadata[key] = ", ".join(value) if isinstance(value, list) else str(value)
-        metadata["version"] = "3.2.0"
+        metadata["version"] = "3.3.0"
         data = {"name": path.parent.name, "description": old["description"],
                 "license": "MIT", "compatibility": "Claude Code; Python 3.10+; full plugin checkout for shared utilities",
                 "metadata": metadata}
@@ -45,9 +45,9 @@ def main() -> None:
         path.write_text("---\n" + yaml.safe_dump(data, sort_keys=False, allow_unicode=True) + "---" + body)
     path = ROOT / ".claude-plugin/marketplace.json"
     manifest = json.loads(path.read_text())
-    manifest["metadata"]["version"] = "3.2.0"
+    manifest["metadata"]["version"] = "3.3.0"
     plugin = manifest["plugins"][0]
-    plugin["version"] = "3.2.0"
+    plugin["version"] = "3.3.0"
     plugin["description"] = f"Evidence-driven cybersecurity toolkit with {len(skills)} domain skills."
     plugin["skills"] = ["./" + str(p.parent.relative_to(ROOT)) for p in skills]
     path.write_text(json.dumps(manifest, indent=2) + "\n")
