@@ -111,15 +111,21 @@ class LogParser:
                 events = self._parse_json_logs(f)
             elif detected in LOG_PATTERNS:
                 events = self._parse_pattern_logs(f, LOG_PATTERNS[detected], filepath)
-                if detected == "auth_log":
+                # syslog and auth_log share one regex, so auto-detection reports
+                # "syslog" for auth lines too. Enrich both: the subpatterns only
+                # add fields when a line actually matches an auth event, so this
+                # is safe for ordinary syslog and fixes auto-mode enrichment.
+                if detected in ("auth_log", "syslog"):
                     for event in events:
                         self._enrich_auth_log_event(event)
             else:
                 events = self._parse_raw_logs(f, filepath)
 
-        # Classify security events
+        # Classify security events. Include the process/daemon name (e.g. sshd,
+        # sudo, su) — for syslog that field carries as much signal as the message.
         for event in events:
-            event["security_category"] = self._classify_event(event.get("message", ""))
+            text = f"{event.get('process', '')} {event.get('message', '')}"
+            event["security_category"] = self._classify_event(text)
 
         logger.info("[Parse] Extracted %d events", len(events))
         return events
@@ -216,20 +222,60 @@ class LogParser:
         }
 
 
+def _run_demo() -> int:
+    """Offline self-test: auto-detect, auth-log enrichment, and classification."""
+    import tempfile
+    lines = [
+        "Jan  2 10:00:00 host sshd[111]: Failed password for invalid user admin from 10.0.0.9 port 22 ssh2",
+        "Jan  2 10:00:05 host sshd[112]: Accepted password for alice from 192.168.1.5 port 22 ssh2",
+        "Jan  2 10:01:00 host sudo: alice : TTY=pts/0 ; COMMAND=/bin/bash",
+    ]
+    with tempfile.NamedTemporaryFile("w", suffix=".log", delete=False) as fh:
+        fh.write("\n".join(lines) + "\n")
+        path = fh.name
+    try:
+        lp = LogParser(log_format="auto")
+        events = lp.parse_file(path)
+    finally:
+        os.unlink(path)
+    enriched = [e for e in events if e.get("src_ip")]
+    checks = [
+        ("all 3 lines parsed", len(events) == 3),
+        ("auto-mode enriches auth events", len(enriched) >= 2),
+        ("failed login src_ip extracted", any(e.get("src_ip") == "10.0.0.9"
+                                              and e.get("status") == "failed" for e in events)),
+        ("accepted login user extracted", any(e.get("user") == "alice"
+                                              and e.get("status") == "success" for e in events)),
+        ("sudo classified as priv-esc", any(e.get("security_category") == "privilege_escalation"
+                                            for e in events)),
+    ]
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Security Log Parser",
         epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill",
     )
-    parser.add_argument("--input", "-i", required=True, help="Log file to parse")
+    parser.add_argument("--input", "-i", help="Log file to parse")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
     parser.add_argument("--format", "-f", choices=["auto", "json", "syslog", "auth_log", "apache_access", "nginx_access", "raw"], default="auto")
     parser.add_argument("--summary", action="store_true", help="Output summary only")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.input:
+        parser.error("--input/-i is required (or use --demo)")
 
     log_parser = LogParser(log_format=args.format)
     events = log_parser.parse_file(args.input)

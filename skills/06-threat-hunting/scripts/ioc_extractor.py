@@ -170,21 +170,59 @@ class IOCExtractor:
         ])
 
 
+def _run_demo() -> int:
+    """Offline self-test: extraction, refang, private-IP filtering, defang, STIX."""
+    text = ("Beacon to hxxps://evil[.]com/gate 8[.]8[.]8[.]8 and 10.0.0.5 "
+            "hash 44d88612fea8a8f36de82e1278abb02f CVE-2024-3400 T1059.001")
+    ex = IOCExtractor(defang=False)
+    res = ex.extract(text)
+    ind = res["indicators"]
+    checks = [
+        ("public IP kept", "8.8.8.8" in ind.get("ipv4", [])),
+        ("private IP dropped", "10.0.0.5" not in ind.get("ipv4", [])),
+        ("refanged URL extracted", any("evil.com" in u for u in ind.get("url", []))),
+        ("md5 extracted", "44d88612fea8a8f36de82e1278abb02f" in ind.get("md5", [])),
+        ("CVE extracted", "CVE-2024-3400" in ind.get("cve", [])),
+        ("ATT&CK technique extracted", "T1059.001" in ind.get("mitre_technique", [])),
+    ]
+    defanged = IOCExtractor(defang=True).extract(text)["indicators"]
+    checks.append(("defang hides dots", all("[.]" in u for u in defanged.get("url", []))))
+    try:
+        import stix2
+        stix2.parse(ex.to_stix(res), allow_custom=True)
+        checks.append(("STIX bundle parses", True))
+    except ImportError:
+        pass
+    except Exception as exc:  # noqa: BLE001
+        checks.append((f"STIX parse ({exc})", False))
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="IOC Extractor — Extract indicators from text",
         epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill",
     )
-    parser.add_argument("--input", "-i", required=True, help="Input file to extract IOCs from")
+    parser.add_argument("--input", "-i", help="Input file to extract IOCs from")
     parser.add_argument("--output", "-o", help="Output file")
     parser.add_argument("--format", "-f", choices=["json", "csv", "stix"], default="json", help="Output format")
     parser.add_argument("--defang", action="store_true", help="Defang network indicators")
     parser.add_argument("--include-private", action="store_true", help="Include private IP addresses")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.input:
+        parser.error("--input/-i is required (or use --demo)")
 
     try:
         raw = Path(args.input).read_bytes()

@@ -19,8 +19,7 @@ from urllib.parse import urljoin
 try:
     import requests
 except ImportError:
-    print("[!] 'requests' module required: pip install requests")
-    sys.exit(1)
+    requests = None  # Deferred: --help and the offline --demo still work without it.
 
 try:
     import dns.resolver
@@ -53,6 +52,7 @@ class SubdomainEnumerator:
         self.timeout = timeout
         self.discovered: Set[str] = set()
         self.resolved: Dict[str, List[str]] = {}
+        self.wildcard_ips: Set[str] = set()
         self.resolver = dns.resolver.Resolver()
         if nameserver:
             self.resolver.nameservers = [nameserver]
@@ -63,22 +63,33 @@ class SubdomainEnumerator:
             {"User-Agent": "Mozilla/5.0 (compatible; SecurityRecon/1.0)"}
         )
 
+    @staticmethod
+    def filter_ct_names(entries: List[dict], domain: str) -> Set[str]:
+        """Extract in-scope, non-wildcard subdomains from crt.sh JSON entries.
+
+        Pulled out of the network call so the parsing is unit-testable offline.
+        """
+        out: Set[str] = set()
+        domain = domain.lower().strip()
+        for entry in entries:
+            name = (entry.get("name_value") or "")
+            for sub in name.split("\n"):
+                sub = sub.strip().lower().rstrip(".")
+                if "*" in sub:
+                    continue
+                if sub == domain or sub.endswith(f".{domain}"):
+                    out.add(sub)
+        return out
+
     def enumerate_ct_logs(self) -> Set[str]:
         """Query Certificate Transparency logs via crt.sh."""
         logger.info("[CT Logs] Querying crt.sh for %s", self.domain)
-        subdomains = set()
+        subdomains: Set[str] = set()
         try:
             url = f"https://crt.sh/?q=%.{self.domain}&output=json"
             response = self.session.get(url, timeout=self.timeout * 3)
             if response.status_code == 200:
-                data = response.json()
-                for entry in data:
-                    name = entry.get("name_value", "")
-                    for sub in name.split("\n"):
-                        sub = sub.strip().lower()
-                        if sub.endswith(f".{self.domain}") or sub == self.domain:
-                            if "*" not in sub:
-                                subdomains.add(sub)
+                subdomains = self.filter_ct_names(response.json(), self.domain)
                 logger.info("[CT Logs] Found %d subdomains", len(subdomains))
         except Exception as e:
             logger.warning("[CT Logs] Error: %s", str(e))
@@ -137,11 +148,18 @@ class SubdomainEnumerator:
         except Exception:
             return None
 
+    def _is_wildcard_only(self, ips: List[str]) -> bool:
+        """True when every resolved IP is a known wildcard IP (i.e. a false positive)."""
+        return bool(self.wildcard_ips) and bool(ips) and set(ips) <= self.wildcard_ips
+
     def _bruteforce_single(self, word: str) -> Optional[str]:
-        """Test a single subdomain candidate."""
+        """Test a single subdomain candidate, suppressing wildcard-only matches."""
         subdomain = f"{word}.{self.domain}"
         result = self._resolve_subdomain(subdomain)
         if result:
+            _sub, ips = result
+            if self._is_wildcard_only(ips):
+                return None  # resolves only to the wildcard address — not a real host
             return result
         return None
 
@@ -177,7 +195,10 @@ class SubdomainEnumerator:
         random_sub = f"randomnonexistent12345.{self.domain}"
         try:
             answers = self.resolver.resolve(random_sub, "A")
-            logger.warning("[Wildcard] Wildcard DNS detected! Random subdomain resolves.")
+            self.wildcard_ips = {str(r) for r in answers}
+            logger.warning("[Wildcard] Wildcard DNS detected (IPs: %s) — brute-force "
+                           "matches resolving only to these will be suppressed.",
+                           ", ".join(sorted(self.wildcard_ips)))
             return True
         except Exception:
             return False
@@ -242,13 +263,41 @@ class SubdomainEnumerator:
         return results
 
 
+def _run_demo() -> int:
+    """Offline self-test of CT parsing and wildcard suppression (no network/DNS)."""
+    entries = [
+        {"name_value": "www.example.com\napi.example.com"},
+        {"name_value": "*.example.com"},            # wildcard entry — must be dropped
+        {"name_value": "mail.other.com"},           # out of scope — must be dropped
+        {"name_value": "EXAMPLE.COM"},              # apex, different case — kept, normalized
+    ]
+    names = SubdomainEnumerator.filter_ct_names(entries, "example.com")
+    ct_ok = names == {"www.example.com", "api.example.com", "example.com"}
+
+    enum = SubdomainEnumerator.__new__(SubdomainEnumerator)  # no resolver/network needed
+    enum.wildcard_ips = {"1.2.3.4"}
+    wc_ok = (enum._is_wildcard_only(["1.2.3.4"]) is True
+             and enum._is_wildcard_only(["5.6.7.8"]) is False
+             and enum._is_wildcard_only(["1.2.3.4", "5.6.7.8"]) is False)
+
+    for label, ok in [("CT-log parse/scope/wildcard filter", ct_ok),
+                      ("wildcard-only suppression", wc_ok)]:
+        print(f"  [{'OK' if ok else 'FAIL'}] {label}")
+    passed = ct_ok and wc_ok
+    print("[+] demo passed" if passed else "[!] demo FAILED")
+    return 0 if passed else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Subdomain Enumeration Tool - Passive & Active Discovery",
         epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill",
     )
     parser.add_argument(
-        "--domain", "-d", required=True, help="Target domain to enumerate"
+        "--domain", "-d", help="Target domain to enumerate"
+    )
+    parser.add_argument(
+        "--demo", action="store_true", help="Run an offline self-test and exit"
     )
     parser.add_argument(
         "--wordlist", "-w", help="Path to wordlist for brute-force enumeration"
@@ -272,8 +321,15 @@ def main():
         "--verbose", "-v", action="store_true", help="Enable verbose/debug output"
     )
     args = parser.parse_args()
+
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.domain:
+        parser.error("--domain/-d is required (or use --demo)")
     if dns is None:
         parser.error("dnspython required: pip install dnspython")
+    if requests is None:
+        parser.error("requests required: pip install requests")
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)

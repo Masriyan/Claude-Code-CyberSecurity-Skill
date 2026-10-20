@@ -10,6 +10,7 @@ Repository: https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill
 import argparse
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -18,11 +19,8 @@ from urllib.parse import urljoin, urlparse
 
 try:
     import requests
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 except ImportError:
-    print("[-] Missing dependency: pip install requests")
-    sys.exit(1)
+    requests = None  # Deferred: --help and the offline --demo still work without it.
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -37,10 +35,17 @@ class APISecurityTester:
     """Test REST APIs for common OWASP API Security Top 10 vulnerabilities."""
 
     def __init__(self, base_url: str, spec_path: Optional[str] = None,
-                 token: Optional[str] = None, timeout: int = 10):
+                 token: Optional[str] = None, timeout: int = 10, verify: bool = True):
         self.base_url = base_url.rstrip("/")
         self.spec_path = spec_path
         self.timeout = timeout
+        self.verify = verify
+        if not verify and requests is not None:
+            try:
+                requests.packages.urllib3.disable_warnings(
+                    requests.packages.urllib3.exceptions.InsecureRequestWarning)
+            except Exception:  # noqa: BLE001
+                pass
         self.headers = {"Accept": "application/json", "Content-Type": "application/json"}
         if token:
             self.headers["Authorization"] = f"Bearer {token}"
@@ -93,7 +98,7 @@ class APISecurityTester:
             resp = requests.request(
                 method, url, headers=req_headers,
                 json=data, params=params,
-                timeout=self.timeout, verify=False, allow_redirects=False
+                timeout=self.timeout, verify=self.verify, allow_redirects=False
             )
             return resp
         except requests.exceptions.ConnectionError:
@@ -121,19 +126,28 @@ class APISecurityTester:
     # -------------------------------------------------------------------------
     # API1:2023 — Broken Object Level Authorization (BOLA)
     # -------------------------------------------------------------------------
+    @staticmethod
+    def mutate_id_path(path: str):
+        """Return (original_id, mutated_path) for a numeric-ID path, else None.
+
+        Pure helper so the IDOR/BOLA mutation is unit-testable without a target.
+        """
+        match = re.search(r"/(\d+)(/|$)", path)
+        if not match:
+            return None
+        original_id = match.group(1)
+        other_id = str(int(original_id) + 1)
+        return original_id, path.replace(f"/{original_id}", f"/{other_id}", 1)
+
     def test_bola(self, endpoints: List[str]) -> None:
         """Test for Broken Object Level Authorization by incrementing object IDs."""
         logger.info("Testing BOLA / IDOR on %d endpoints...", len(endpoints))
-        id_pattern = re.compile(r"/(\d+)(/|$)")
 
         for path in endpoints:
-            match = id_pattern.search(path)
-            if not match:
+            mutated = self.mutate_id_path(path)
+            if not mutated:
                 continue
-
-            original_id = match.group(1)
-            other_id = str(int(original_id) + 1) if original_id.isdigit() else "2"
-            modified_path = path.replace(f"/{original_id}", f"/{other_id}", 1)
+            other_id, modified_path = mutated
 
             original_resp = self._request("GET", path)
             modified_resp = self._request("GET", modified_path)
@@ -282,7 +296,7 @@ class APISecurityTester:
 
     def run(self) -> Dict[str, Any]:
         """Run all enabled tests."""
-        print(DISCLAIMER)
+        print(DISCLAIMER, file=sys.stderr)  # gate stays visible; stdout stays clean JSON
         logger.info("Starting API security assessment: %s", self.base_url)
 
         self.test_broken_auth()
@@ -330,19 +344,59 @@ def print_summary(results: Dict[str, Any]) -> None:
         print()
 
 
+def _run_demo() -> int:
+    """Offline self-test: OpenAPI endpoint discovery and the IDOR path mutation."""
+    import tempfile
+    spec = {"paths": {
+        "/users/{id}": {"get": {"summary": "get user", "security": [{"bearer": []}]}},
+        "/public/health": {"get": {"summary": "health"}},
+    }}
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
+        json.dump(spec, fh)
+        path = fh.name
+    try:
+        t = APISecurityTester.__new__(APISecurityTester)
+        t.endpoints = []
+        t._load_spec(path)
+    finally:
+        os.unlink(path)
+    checks = [
+        ("spec endpoints discovered", len(t.endpoints) == 2),
+        ("auth requirement detected", any(e["requires_auth"] for e in t.endpoints)),
+        ("IDOR mutation increments id", APISecurityTester.mutate_id_path("/api/users/41/profile")
+         == ("41", "/api/users/42/profile")),
+        ("non-numeric path skipped", APISecurityTester.mutate_id_path("/api/users/me") is None),
+    ]
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="API Security Tester — OWASP API Security Top 10",
         epilog="Example: api_security_tester.py --base-url https://api.example.com --spec openapi.yaml"
     )
-    parser.add_argument("--base-url", required=True, help="Base URL of the API")
+    parser.add_argument("--base-url", help="Base URL of the API")
     parser.add_argument("--spec", help="OpenAPI/Swagger spec file (JSON or YAML)")
     parser.add_argument("--token", help="Bearer token for authentication")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
     parser.add_argument("--timeout", type=int, default=10, help="Request timeout in seconds")
+    parser.add_argument("--insecure", action="store_true",
+                        help="Disable TLS certificate verification (self-signed/internal APIs)")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     args = parser.parse_args()
 
-    tester = APISecurityTester(args.base_url, args.spec, args.token, args.timeout)
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.base_url:
+        parser.error("--base-url is required (or use --demo)")
+    if requests is None:
+        parser.error("requests is required: pip install requests")
+
+    tester = APISecurityTester(args.base_url, args.spec, args.token, args.timeout, verify=not args.insecure)
     results = tester.run()
     print_summary(results)
 

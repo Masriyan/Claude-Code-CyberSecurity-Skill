@@ -6,7 +6,7 @@ description: Software supply chain security — SBOM generation and analysis, de
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, supply-chain, sbom, sca, typosquatting, dependency-confusion,
     slsa, sigstore, ci-cd-security, provenance
@@ -191,9 +191,12 @@ python scripts/supply_chain_auditor.py --project-dir . --output audit.json
 
 # Also verify each dependency exists on its public registry (adds network calls)
 python scripts/supply_chain_auditor.py --project-dir . --check-registry --output audit.json
+
+# Self-test the detectors offline on a synthetic vulnerable project
+python scripts/supply_chain_auditor.py --demo
 ```
 
-Covers `package.json` (npm), `requirements.txt` (PyPI), `Cargo.toml` (crates.io), and `go.mod` (Go) manifests — lockfile presence, typosquatting, floating versions (npm/PyPI), and risky lifecycle scripts (npm) — plus every workflow under `.github/workflows/`. Findings are heuristic near-misses and configuration gaps, not proof of compromise — always verify a flagged package by hand before treating it as malicious.
+Covers `package.json` (npm), `requirements.txt` (PyPI), `Cargo.toml` (crates.io), and `go.mod` (Go) manifests — lockfile presence, typosquatting, floating versions (npm/PyPI), and risky lifecycle scripts (npm) — plus every workflow under `.github/workflows/`. GitHub Action steps count as pinned only against an immutable commit SHA **or** a `sha256:` image digest (so digest-pinned `docker://` actions are not false-flagged); tag/branch refs are reported. Findings are heuristic near-misses and configuration gaps, not proof of compromise — always verify a flagged package by hand before treating it as malicious.
 
 ---
 

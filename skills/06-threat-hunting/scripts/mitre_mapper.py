@@ -266,6 +266,28 @@ class MITREMapper:
         }
 
 
+def _run_demo() -> int:
+    """Offline self-test of technique lookup, tactic grouping, Navigator, and SIEM queries."""
+    m = MITREMapper()
+    sub = m.lookup_technique("T1059.001")
+    mapped = m.map_techniques(["T1059.001", "T1486", "T9999"])
+    layer = m.generate_navigator_layer(["T1059.001", "T1003.001"])
+    query = m.generate_detection_query("T1059.001", "splunk")
+    checks = [
+        ("sub-technique resolves to parent tactic", sub and sub.get("tactic") == "Execution"),
+        ("sub-technique name correct", sub and sub.get("name") == "PowerShell"),
+        ("valid IDs mapped, bogus unmapped", mapped["total_mapped"] == 2 and mapped["unmapped"] == ["T9999"]),
+        ("grouped by tactic", "Execution" in mapped["by_tactic"] and "Impact" in mapped["by_tactic"]),
+        ("navigator layer has 2 techniques", len(layer["techniques"]) == 2),
+        ("splunk query generated", bool(query) and "4688" in query),
+    ]
+    ok = all(bool(p) for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="MITRE ATT&CK Mapper",
@@ -277,11 +299,15 @@ def main():
     parser.add_argument("--navigator", action="store_true", help="Export ATT&CK Navigator layer")
     parser.add_argument("--attack-version", default="14", help="Target ATT&CK release; bundled subset is legacy v14")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    if args.demo:
+        sys.exit(_run_demo())
 
     mapper = MITREMapper()
 

@@ -18,8 +18,7 @@ from urllib.parse import urlparse
 try:
     import requests
 except ImportError:
-    print("[!] 'requests' module required: pip install requests")
-    sys.exit(1)
+    requests = None  # Deferred: --help and the offline --demo still work without it.
 
 logging.basicConfig(
     level=logging.INFO,
@@ -70,14 +69,23 @@ TECH_SIGNATURES = {
 class TechFingerprinter:
     """Web technology fingerprinting engine."""
 
-    def __init__(self, timeout: int = 10):
+    def __init__(self, timeout: int = 10, verify: bool = True):
         self.timeout = timeout
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         })
-        self.session.verify = False
+        # Verify TLS by default; only disable on explicit --insecure (recon of
+        # hosts with self-signed/expired certs). Suppress the noisy warning only
+        # when the user opted in.
+        self.session.verify = verify
+        if not verify:
+            try:
+                import urllib3
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            except Exception:  # noqa: BLE001 - warning suppression is best-effort
+                pass
 
     def fingerprint(self, url: str) -> Dict[str, Any]:
         """Perform full technology fingerprinting on a URL."""
@@ -251,6 +259,46 @@ class TechFingerprinter:
         return {"tls": "HTTPS enabled", "host": parsed.hostname}
 
 
+class _StubResponse:
+    """Minimal response stand-in for the offline --demo (no network)."""
+
+    def __init__(self, headers, text, cookies):
+        self.headers = headers
+        self.text = text
+        self._cookies = cookies
+
+    @property
+    def cookies(self):
+        return type("C", (), {"get_dict": lambda _self: self._cookies})()
+
+
+def _run_demo() -> int:
+    """Offline self-test of the signature matchers against a synthetic response."""
+    fp = TechFingerprinter.__new__(TechFingerprinter)  # skip requests session
+    resp = _StubResponse(
+        headers={"Server": "nginx", "cf-ray": "abc123", "X-Powered-By": "Express"},
+        text='<link href="wp-content/themes/x.css"><script src="react.production.min.js"></script>',
+        cookies={"__cfduid": "1"},
+    )
+    server = fp._detect_server(resp)
+    cms = fp._detect_cms(resp)
+    frameworks = fp._detect_frameworks(resp)
+    waf = fp._detect_waf(resp)
+    cdn = fp._detect_cdn(resp)
+    checks = [
+        ("Nginx server", "Nginx" in server),
+        ("WordPress CMS", "WordPress" in cms),
+        ("React framework", "React" in frameworks),
+        ("Cloudflare WAF", "Cloudflare" in waf),
+        ("Cloudflare CDN", "Cloudflare" in cdn),
+    ]
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Technology Fingerprinting Tool",
@@ -260,16 +308,23 @@ def main():
     parser.add_argument("--urls", "-U", help="File with list of URLs (one per line)")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
     parser.add_argument("--timeout", type=int, default=10, help="Request timeout (default: 10)")
+    parser.add_argument("--insecure", action="store_true",
+                        help="Disable TLS certificate verification (for self-signed/expired certs)")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
+    if args.demo:
+        sys.exit(_run_demo())
     if not args.url and not args.urls:
-        parser.error("Either --url or --urls is required")
+        parser.error("Either --url or --urls is required (or use --demo)")
+    if requests is None:
+        parser.error("requests required: pip install requests")
 
-    fingerprinter = TechFingerprinter(timeout=args.timeout)
+    fingerprinter = TechFingerprinter(timeout=args.timeout, verify=not args.insecure)
 
     if args.url:
         results = fingerprinter.fingerprint(args.url)

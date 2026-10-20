@@ -1,6 +1,6 @@
 # Usage Guide
 
-Comprehensive usage guide for the **Claude Code CyberSecurity Skill Collection v3.1**.
+Comprehensive usage guide for the **Claude Code CyberSecurity Skill Collection v3.3**.
 
 ---
 
@@ -30,7 +30,7 @@ Claude reads each file's YAML frontmatter to understand the skill's domain:
 ---
 name: Threat Hunting & IOC Analysis
 description: IOC extraction, MITRE ATT&CK mapping, threat hunting
-version: 3.1.0
+version: 3.3.0
 tags: [cybersecurity, threat-hunting, ioc, mitre-attack]
 ---
 ```
@@ -306,8 +306,8 @@ C2 infrastructure setup is documented in SKILL.md but requires explicit authoriz
 ```
 
 ```bash
-python skills/15-blue-team-defense/scripts/hardening_checker.py --os ubuntu --version 22.04 --output report.json
-python skills/15-blue-team-defense/scripts/hardening_checker.py --os windows --cis-level 1
+python skills/15-blue-team-defense/scripts/hardening_checker.py --os ubuntu --output report.json
+python skills/15-blue-team-defense/scripts/hardening_checker.py --demo   # offline self-test
 ```
 
 Sigma/Suricata/YARA rule generation is handled directly by Claude using the detection templates in SKILL.md — just ask: `"Create a Sigma rule to detect scheduled task creation."`
@@ -458,7 +458,15 @@ python skills/22-purple-team/scripts/detection_validator.py --plan results.json 
 
 ## Standalone Script Reference
 
-All scripts that exist and are validated to run:
+All scripts that exist and are validated to run. **Every script supports `--demo`** —
+an offline self-test that runs the tool's core logic against built-in sample data and
+reports `[+] demo passed` (exit 0) or the failing check (non-zero). Use it to confirm a
+script works before pointing it at a real target, and in CI as a behavioral smoke test:
+
+```bash
+python skills/02-vulnerability-scanner/scripts/cvss_calculator.py --demo
+python skills/16-ai-llm-security/scripts/model_supply_chain.py --demo
+```
 
 | Script | Skill | Purpose |
 |--------|-------|---------|

@@ -17,8 +17,11 @@ Usage:
 """
 import argparse
 import json
+import logging
 import sys
 from collections import Counter, defaultdict
+
+logger = logging.getLogger("ics_protocol_analyzer")
 
 # protocol -> (well-known port, default risk note)
 ICS_PORTS = {
@@ -38,7 +41,23 @@ ICS_PORTS = {
 # Modbus write/control function codes (the risky ones)
 MODBUS_WRITE_FC = {5: "Write Single Coil", 6: "Write Single Register",
                    15: "Write Multiple Coils", 16: "Write Multiple Registers",
-                   8: "Diagnostics", 43: "Encapsulated Interface"}
+                   8: "Diagnostics", 43: "Encapsulated Interface",
+                   22: "Mask Write Register", 23: "Read/Write Multiple Registers"}
+
+# S7comm parameter functions that change PLC state (vs. benign reads/setup).
+S7_CONTROL_FUNC = {
+    0x05: "Write Var", 0x1a: "Request Download", 0x1b: "Download Block",
+    0x1c: "Download Ended", 0x1d: "Start Upload", 0x1e: "Upload",
+    0x1f: "End Upload", 0x28: "PLC Control (e.g. start/PI service)",
+    0x29: "PLC Stop",
+}
+
+# DNP3 application-layer function codes that command or restart the outstation.
+DNP3_CONTROL_FUNC = {
+    3: "Select", 4: "Operate", 5: "Direct Operate", 6: "Direct Operate (no ack)",
+    13: "Cold Restart", 14: "Warm Restart", 18: "Stop Application",
+    1: "Write", 15: "Initialize Data", 16: "Initialize Application",
+}
 
 DORK_TEMPLATES = {
     "shodan": [
@@ -70,6 +89,16 @@ def first(d, *keys):
             v = d[k]
             return v[0] if isinstance(v, list) else v
     return None
+
+
+def _as_int(val):
+    """Coerce a tshark field (decimal or '0x..' string) to int, else None."""
+    if val is None:
+        return None
+    try:
+        return int(str(val), 0) if str(val).lower().startswith("0x") else int(val)
+    except (TypeError, ValueError):
+        return None
 
 
 def analyze_pcap(path: str) -> dict:
@@ -112,19 +141,27 @@ def analyze_pcap(path: str) -> dict:
 
         # Modbus write detection
         mb = layers.get("modbus")
-        if mb:
-            fc = first(mb if isinstance(mb, dict) else {}, "modbus.func_code")
-            try:
-                fci = int(fc) if fc is not None else None
-            except (TypeError, ValueError):
-                fci = None
+        if isinstance(mb, dict):
+            fci = _as_int(first(mb, "modbus.func_code"))
             if fci in MODBUS_WRITE_FC:
                 control_ops.append({"proto": "Modbus", "src": src, "dst": dst,
                                     "op": MODBUS_WRITE_FC[fci], "fc": fci})
-        # S7 / DNP3 presence is itself notable for control segments
-        if proto.startswith("S7") and src and dst:
-            control_ops.append({"proto": "S7comm", "src": src, "dst": dst,
-                                "op": "S7 job/userdata (possible program op)"})
+
+        # S7comm: flag only state-changing parameter functions, not every packet.
+        s7 = layers.get("s7comm")
+        if isinstance(s7, dict):
+            func = _as_int(first(s7, "s7comm.param.func"))
+            if func in S7_CONTROL_FUNC:
+                control_ops.append({"proto": "S7comm", "src": src, "dst": dst,
+                                    "op": S7_CONTROL_FUNC[func], "func": func})
+
+        # DNP3: flag application-layer control/restart functions.
+        dnp3 = layers.get("dnp3")
+        if isinstance(dnp3, dict):
+            afunc = _as_int(first(dnp3, "dnp3.al.func"))
+            if afunc in DNP3_CONTROL_FUNC:
+                control_ops.append({"proto": "DNP3", "src": src, "dst": dst,
+                                    "op": DNP3_CONTROL_FUNC[afunc], "func": afunc})
 
     return {
         "protocols": dict(proto_count),
@@ -148,13 +185,57 @@ def emit_dorks(vendor: str | None) -> list[str]:
     return out
 
 
+_DEMO_PACKETS = [
+    {"_source": {"layers": {"ip": {"ip.src": "10.0.0.5", "ip.dst": "10.0.1.10"},
+                            "tcp": {"tcp.dstport": "502"},
+                            "modbus": {"modbus.func_code": "16"}}}},
+    {"_source": {"layers": {"ip": {"ip.src": "10.0.0.5", "ip.dst": "10.0.1.11"},
+                            "tcp": {"tcp.dstport": "102"},
+                            "s7comm": {"s7comm.param.func": "0x29"}}}},
+    {"_source": {"layers": {"ip": {"ip.src": "10.0.0.6", "ip.dst": "10.0.1.12"},
+                            "tcp": {"tcp.dstport": "20000"},
+                            "dnp3": {"dnp3.al.func": "4"}}}},
+    {"_source": {"layers": {"ip": {"ip.src": "10.0.0.7", "ip.dst": "10.0.1.11"},
+                            "tcp": {"tcp.dstport": "102"},
+                            "s7comm": {"s7comm.param.func": "0x04"}}}},  # Read Var — benign, must NOT flag
+]
+
+
+def _run_demo() -> int:
+    """Offline self-test using synthetic tshark-shaped packets (no capture needed)."""
+    import tempfile
+    import os
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
+        json.dump(_DEMO_PACKETS, fh)
+        tmp = fh.name
+    try:
+        r = analyze_pcap(tmp)
+    finally:
+        os.unlink(tmp)
+    ops = {(o["proto"], o["op"]) for o in r["control_operations"]}
+    expected = {("Modbus", "Write Multiple Registers"), ("S7comm", "PLC Stop"), ("DNP3", "Operate")}
+    ok = ops == expected  # the benign S7 Read Var must be absent
+    print(f"  control ops: {sorted(ops)}")
+    print(f"  protocols:   {r['protocols']}")
+    print("[+] demo passed" if ok else f"[!] demo FAILED (expected {sorted(expected)})")
+    return 0 if ok else 1
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Passive ICS protocol analyzer / exposure dork generator")
     ap.add_argument("--input", help="tshark JSON export of a capture")
     ap.add_argument("--dorks", action="store_true", help="Emit exposure dorks instead of analyzing a PCAP")
     ap.add_argument("--vendor", help="Vendor for dork mode (siemens, schneider, rockwell, ge, omron)")
     ap.add_argument("--output", help="Write output (JSON for analysis, text for dorks)")
+    ap.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
+    ap.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
     args = ap.parse_args()
+
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.WARNING,
+                        format="%(levelname)s %(name)s: %(message)s")
+
+    if args.demo:
+        sys.exit(_run_demo())
 
     if args.dorks:
         lines = emit_dorks(args.vendor)

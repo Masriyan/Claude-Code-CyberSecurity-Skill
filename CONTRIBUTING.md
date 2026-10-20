@@ -53,7 +53,7 @@ name: 23-your-skill-name
 description: One-line description (Claude uses this for matching)
 license: MIT
 metadata:
-  version: "3.2.0"
+  version: "3.3.0"
   tags: cybersecurity, relevant, tags
 ---
 

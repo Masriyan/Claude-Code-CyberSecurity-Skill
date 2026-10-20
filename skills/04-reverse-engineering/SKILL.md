@@ -5,7 +5,7 @@ description: Binary analysis, assembly interpretation, disassembly, decompilatio
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, reverse-engineering, binary-analysis, disassembly, firmware,
     assembly, ctf

@@ -27,6 +27,34 @@ class LinuxHardeningChecker:
     def __init__(self):
         self.findings: List[Dict] = []
 
+    SSH_CHECKS = [
+        ("SSH-001", "HIGH", "Root login disabled", r"PermitRootLogin\s+(no|prohibit-password)"),
+        ("SSH-002", "HIGH", "Password auth disabled", r"PasswordAuthentication\s+no"),
+        ("SSH-003", "MEDIUM", "X11 forwarding disabled", r"X11Forwarding\s+no"),
+        ("SSH-004", "MEDIUM", "Max auth tries limited", r"MaxAuthTries\s+[1-4]"),
+        ("SSH-005", "MEDIUM", "SSH protocol version 2", r"Protocol\s+2"),
+        ("SSH-006", "LOW", "Login grace time limited", r"LoginGraceTime\s+\d+"),
+        ("SSH-007", "MEDIUM", "Strong ciphers only (no CBC/arcfour)", r"Ciphers\s+(?!.*(cbc|arcfour|3des)).+"),
+        ("SSH-008", "MEDIUM", "Modern KEX algorithms set", r"KexAlgorithms\s+.*(curve25519|sntrup|ecdh-sha2)"),
+        ("SSH-009", "LOW", "ClientAlive idle timeout set", r"ClientAliveInterval\s+[1-9]\d*"),
+    ]
+
+    @classmethod
+    def evaluate_ssh_config(cls, content: str) -> List[Dict]:
+        """Evaluate sshd_config text, ignoring commented-out directives.
+
+        A commented default like ``#PermitRootLogin no`` does NOT harden the
+        server, so comment lines are stripped before matching — otherwise the
+        check would report a false PASS on a stock config.
+        """
+        active = "\n".join(line for line in content.splitlines()
+                           if not line.lstrip().startswith("#"))
+        findings = []
+        for cid, sev, title, pattern in cls.SSH_CHECKS:
+            status = "PASS" if re.search(pattern, active) else "FAIL"
+            findings.append({"id": cid, "severity": sev, "title": title, "status": status})
+        return findings
+
     def check_ssh_config(self) -> None:
         config = "/etc/ssh/sshd_config"
         if not os.path.exists(config):
@@ -39,20 +67,7 @@ class LinuxHardeningChecker:
             self.findings.append({"id": "SSH-000", "severity": "INFO",
                                   "title": "SSH config unreadable (run as root for SSH checks)", "status": "SKIP"})
             return
-        checks = [
-            ("SSH-001", "HIGH", "Root login disabled", r"PermitRootLogin\s+no"),
-            ("SSH-002", "HIGH", "Password auth disabled", r"PasswordAuthentication\s+no"),
-            ("SSH-003", "MEDIUM", "X11 forwarding disabled", r"X11Forwarding\s+no"),
-            ("SSH-004", "MEDIUM", "Max auth tries limited", r"MaxAuthTries\s+[1-4]"),
-            ("SSH-005", "MEDIUM", "SSH protocol version 2", r"Protocol\s+2"),
-            ("SSH-006", "LOW", "Login grace time limited", r"LoginGraceTime\s+\d+"),
-            ("SSH-007", "MEDIUM", "Strong ciphers only (no CBC/arcfour)", r"Ciphers\s+(?!.*(cbc|arcfour|3des)).+"),
-            ("SSH-008", "MEDIUM", "Modern KEX algorithms set", r"KexAlgorithms\s+.*(curve25519|sntrup|ecdh-sha2)"),
-            ("SSH-009", "LOW", "ClientAlive idle timeout set", r"ClientAliveInterval\s+[1-9]\d*"),
-        ]
-        for cid, sev, title, pattern in checks:
-            status = "PASS" if re.search(pattern, content) else "FAIL"
-            self.findings.append({"id": cid, "severity": sev, "title": title, "status": status})
+        self.findings.extend(self.evaluate_ssh_config(content))
 
     def check_firewall(self) -> None:
         for fw_cmd in ["ufw status", "iptables -L -n", "nft list ruleset"]:
@@ -185,15 +200,41 @@ class LinuxHardeningChecker:
         }
 
 
+def _run_demo() -> int:
+    """Offline self-test: SSH evaluator must ignore commented directives."""
+    hardened = ("PermitRootLogin no\nPasswordAuthentication no\nX11Forwarding no\n"
+                "MaxAuthTries 3\nProtocol 2\n")
+    commented = ("#PermitRootLogin no\n#PasswordAuthentication no\n"
+                 "PermitRootLogin yes\n")
+    h = {f["id"]: f["status"] for f in LinuxHardeningChecker.evaluate_ssh_config(hardened)}
+    c = {f["id"]: f["status"] for f in LinuxHardeningChecker.evaluate_ssh_config(commented)}
+    checks = [
+        ("hardened: root login PASS", h["SSH-001"] == "PASS"),
+        ("hardened: password auth PASS", h["SSH-002"] == "PASS"),
+        ("commented default NOT a false PASS", c["SSH-001"] == "FAIL"),
+        ("prohibit-password accepted", LinuxHardeningChecker.evaluate_ssh_config(
+            "PermitRootLogin prohibit-password\n")[0]["status"] == "PASS"),
+    ]
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(description="System Hardening Checker",
                                      epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill")
     parser.add_argument("--os", choices=["ubuntu", "centos", "windows", "auto"], default="auto")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    if args.demo:
+        sys.exit(_run_demo())
 
     checker = LinuxHardeningChecker()
     results = checker.run()

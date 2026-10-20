@@ -5,7 +5,7 @@ description: AWS/Azure/GCP security auditing, container and Kubernetes hardening
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, cloud, aws, azure, gcp, kubernetes, docker, container, iac,
     terraform

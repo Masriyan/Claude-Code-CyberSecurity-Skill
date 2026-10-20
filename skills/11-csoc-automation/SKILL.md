@@ -5,7 +5,7 @@ description: SOC alert triage, incident playbook automation, escalation workflow
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, csoc, soc, automation, playbook, triage, alert, operations,
     siem

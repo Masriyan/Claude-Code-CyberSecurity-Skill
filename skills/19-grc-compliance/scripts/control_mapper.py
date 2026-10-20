@@ -93,6 +93,57 @@ CROSSWALK = {
         "cis_v8": ["15 Service Provider Management"],
         "pci_dss": ["12.8 Manage TPSPs"],
     },
+    "network security": {
+        "csf": ["PR.IR-01", "DE.CM-01"],
+        "iso27001": ["A.8.20 Networks security", "A.8.21 Network services",
+                     "A.8.22 Segregation of networks"],
+        "soc2": ["CC6.6", "CC6.7"],
+        "nist80053": ["SC-7", "AC-4"],
+        "cis_v8": ["12 Network Infrastructure Management", "13 Network Monitoring and Defense"],
+        "pci_dss": ["1 Network security controls"],
+    },
+    "backup and recovery": {
+        "csf": ["PR.DS-11", "RC.RP-01"],
+        "iso27001": ["A.8.13 Information backup", "A.5.29 Security during disruption"],
+        "soc2": ["A1.2", "A1.3"],
+        "nist80053": ["CP-9", "CP-10"],
+        "cis_v8": ["11 Data Recovery"],
+        "pci_dss": ["—"],
+    },
+    "security awareness": {
+        "csf": ["PR.AT-01", "PR.AT-02"],
+        "iso27001": ["A.6.3 Awareness, education and training"],
+        "soc2": ["CC1.4", "CC2.2"],
+        "nist80053": ["AT-2", "AT-3"],
+        "cis_v8": ["14 Security Awareness and Skills Training"],
+        "pci_dss": ["12.6 Security awareness program"],
+    },
+    "secure development": {
+        "csf": ["PR.PS-06"],
+        "iso27001": ["A.8.25 Secure development lifecycle", "A.8.28 Secure coding"],
+        "soc2": ["CC8.1"],
+        "nist80053": ["SA-3", "SA-11", "SA-15"],
+        "cis_v8": ["16 Application Software Security"],
+        "pci_dss": ["6.2 Bespoke and custom software"],
+    },
+    "asset management": {
+        "csf": ["ID.AM-01", "ID.AM-02"],
+        "iso27001": ["A.5.9 Inventory of associated assets", "A.5.11 Return of assets"],
+        "soc2": ["CC6.1"],
+        "nist80053": ["CM-8", "PM-5"],
+        "cis_v8": ["1 Inventory and Control of Enterprise Assets",
+                   "2 Inventory and Control of Software Assets"],
+        "pci_dss": ["9.5 Media inventory", "12.5 Asset inventory"],
+    },
+    "physical security": {
+        "csf": ["PR.AA-06"],
+        "iso27001": ["A.7.1 Physical security perimeters", "A.7.2 Physical entry",
+                     "A.7.4 Physical security monitoring"],
+        "soc2": ["CC6.4"],
+        "nist80053": ["PE-2", "PE-3", "PE-6"],
+        "cis_v8": ["—"],
+        "pci_dss": ["9 Restrict physical access"],
+    },
 }
 
 # NIST CSF 2.0 subcategory -> domain key (for --csf lookups)
@@ -134,8 +185,12 @@ def main() -> None:
     ap.add_argument("--csf", help="NIST CSF 2.0 subcategory or function prefix, e.g. PR.AA-01 or DE")
     ap.add_argument("--frameworks", default="all", help="Comma list: csf,iso27001,soc2,nist80053,cis_v8,pci_dss or 'all'")
     ap.add_argument("--list", action="store_true", help="List available control domains")
+    ap.add_argument("--demo", action="store_true", help="Show a sample crosswalk and exit")
     ap.add_argument("--output", help="Write JSON")
     args = ap.parse_args()
+
+    if args.demo:
+        args.control = "access control"
 
     if args.list:
         print("Available control domains:")

@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/Claude%20Code-CyberSecurity%20Skills-red?style=for-the-badge" alt="Claude Code CyberSecurity Skills"/>
   <br/>
   <img src="https://img.shields.io/badge/Skills-22-blue?style=flat-square" alt="Skills"/>
-  <img src="https://img.shields.io/badge/Version-3.1.0-orange?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-3.3.0-brightgreen?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"/>
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python"/>
   <img src="https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=flat-square" alt="Platform"/>
@@ -15,7 +15,6 @@
 # Claude Code CyberSecurity Skill Collection
 
 [![SkillProof — tested Claude skill](https://skillproof.dev/badge/reconnaissance-osint-automation.svg)](https://skillproof.dev/skills/reconnaissance-osint-automation)
-[![Security: A — Skills Directory](https://www.skillsdirectory.com/api/skills/masriyan-18-ot-ics-security/badge)](https://www.skillsdirectory.com/skills/masriyan-18-ot-ics-security)
 
 ## Engineering quality — 3.2 foundation
 
@@ -182,6 +181,23 @@ You can also **explicitly name a skill**:
 > Use the log-analysis skill to build a Sentinel KQL query for DCSync detection
 > Use the blue-team-defense skill to audit this Dockerfile
 ```
+
+---
+
+## What's New in v3.3
+
+<p align="center">
+  <img src="assets/v3.3-selftest.png" alt="v3.3 self-test: make check green and per-script --demo self-tests passing" width="100%">
+</p>
+
+**A correctness, robustness, and self-verification pass across every skill — the collection is now harder to break and easier to trust:**
+
+- **Every script self-tests.** All ~35 automation scripts ship an offline `--demo` that asserts *real* detection logic (not just that the CLI launches) — run any of them with `--demo` to prove the tool works before you point it at a target.
+- **Real bugs fixed, verified by those demos** — a few highlights: the ML model scanner now catches dangerous imports in modern (`STACK_GLOBAL`) pickles; the APK analyzer reports only *genuinely* exported components; the IaC scanner no longer false-flags pinned Docker images and now scans single files; the binary analyzer's Full-RELRO check actually works (`BIND_NOW`); the hardening checker no longer counts commented-out SSH directives as a PASS; subdomain brute-force suppresses wildcard-DNS false positives.
+- **Security hardening of the tools themselves** — the forensic timeline's HTML report escapes log content (was stored-XSS-prone); web/API scanners verify TLS by default with an explicit `--insecure` opt-out; authorization disclaimers moved to stderr so stdout stays clean JSON.
+- **Deeper content** — Skill 19's control crosswalk grew from 8 to 15 domains; Skill 03 implements the previously-missing `bind_shell`/`cmd_exec` payload types.
+- **Clear licensing** — explicit `SPDX`/copyright in `LICENSE` plus a new `NOTICE` requiring attribution be preserved in redistributions.
+- **Consistency** — every `SKILL.md`, the marketplace manifest, and the tooling are aligned at **3.3.0**. All quality gates (`make check`: Ruff, Bandit, 74 pytest cases) stay green. No skill scope was removed and every authorization/safety gate is intact.
 
 ---
 

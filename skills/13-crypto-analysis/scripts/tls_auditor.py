@@ -311,20 +311,59 @@ class TLSAuditor:
             return "F"
 
 
+def _run_demo() -> int:
+    """Offline self-test of vulnerability assessment and grading (no network)."""
+    auditor = TLSAuditor.__new__(TLSAuditor)  # pure methods, no connection needed
+    weak = {
+        "protocol_support": {"TLSv1.0": "SUPPORTED", "TLSv1.2": "SUPPORTED", "TLSv1.3": "NOT_SUPPORTED"},
+        "certificate": {"valid": False, "expired": True, "error": "certificate has expired"},
+        "cipher_suites": {"strength": "WEAK"},
+        "security_headers": {"Strict-Transport-Security": "MISSING"},
+    }
+    strong = {
+        "protocol_support": {"TLSv1.2": "SUPPORTED", "TLSv1.3": "SUPPORTED"},
+        "certificate": {"valid": True, "expired": False},
+        "cipher_suites": {"strength": "STRONG"},
+        "security_headers": {"Strict-Transport-Security": "max-age=63072000"},
+    }
+    weak["vulnerabilities"] = auditor._assess_vulnerabilities(weak)
+    strong["vulnerabilities"] = auditor._assess_vulnerabilities(strong)
+    weak_titles = {v["title"] for v in weak["vulnerabilities"]}
+    checks = [
+        ("weak protocol flagged", any("TLSv1.0" in t for t in weak_titles)),
+        ("expired cert flagged CRITICAL", any(v["severity"] == "CRITICAL" for v in weak["vulnerabilities"])),
+        ("HSTS-missing flagged", any("HSTS" in t for t in weak_titles)),
+        ("weak config grades D/F", auditor._calculate_grade(weak) in ("D", "F")),
+        ("strong config has no vulns", strong["vulnerabilities"] == []),
+        ("strong config grades A", auditor._calculate_grade(strong) == "A"),
+    ]
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="TLS/SSL Configuration Auditor",
         epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill",
     )
-    parser.add_argument("--host", "-H", required=True, help="Target hostname")
+    parser.add_argument("--host", "-H", help="Target hostname")
     parser.add_argument("--port", "-p", type=int, default=443, help="Port (default: 443)")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
     parser.add_argument("--grade", action="store_true", help="Show grade only")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.host:
+        parser.error("--host/-H is required (or use --demo)")
 
     auditor = TLSAuditor(host=args.host, port=args.port)
     results = auditor.audit()

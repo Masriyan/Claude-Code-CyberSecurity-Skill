@@ -6,7 +6,7 @@ description: Android and iOS application security testing — static and dynamic
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, mobile-security, android, ios, masvs, mastg, apk, ipa, frida,
     reverse-engineering
@@ -168,7 +168,16 @@ python scripts/apk_analyzer.py --apk app.apk --output apk_report.json
 
 # Secret-scan the decoded sources too (point at an apktool/jadx output dir)
 python scripts/apk_analyzer.py --apk app.apk --sources ./jadx_out --output apk_report.json
+
+# Verify the exported-component parser offline
+python scripts/apk_analyzer.py --demo
 ```
+With `pyaxmlparser` installed the analyzer parses the real manifest XML and lists
+**only genuinely exported** components — `android:exported="true"`, or a component
+with an `intent-filter` and no explicit flag on apps targeting API < 31 (implicit
+export) — and notes whether each is guarded by a `permission`. Without the parser
+it reports component export as *undetermined* rather than guessing, so the report
+never over-claims attack surface.
 
 ---
 

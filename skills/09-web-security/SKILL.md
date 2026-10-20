@@ -6,7 +6,7 @@ description: OWASP Top 10 testing, injection vulnerability detection, API securi
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, web-security, owasp, xss, sqli, api, pentest, burpsuite, authentication
 ---

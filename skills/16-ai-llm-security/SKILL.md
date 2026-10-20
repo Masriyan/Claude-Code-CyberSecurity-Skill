@@ -6,7 +6,7 @@ description: LLM and AI application security testing — prompt injection, jailb
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, ai-security, llm, prompt-injection, owasp-llm, agent-security,
     rag, mlsecops, red-teaming
@@ -181,14 +181,37 @@ python scripts/prompt_injection_tester.py --url https://app.test/api/chat --fiel
 
 # Use a custom payload corpus and a refusal-detection keyword set
 python scripts/prompt_injection_tester.py --url ... --corpus payloads.txt --judge-keywords refusals.txt
+
+# Verify the judge logic offline before trusting live verdicts
+python scripts/prompt_injection_tester.py --demo
 ```
+The judge scores each response **SUCCESS / BLOCKED / PARTIAL**: an echoed canary
+is authoritative; an explicit refusal outranks weak leak-phrase matches (so
+"I cannot reveal my system prompt" is not a false success); mixed signals are
+`PARTIAL` for human review. Treat every `SUCCESS`/`PARTIAL` as a lead to
+reproduce manually — the keyword judge is a triage filter, not ground truth.
 
 ### `model_supply_chain.py`
+Statically walks pickle opcodes **without unpickling**, resolving both legacy
+`GLOBAL` (protocol ≤3) and `STACK_GLOBAL` (protocol ≥4, used by modern
+PyTorch/transformers checkpoints) so dangerous imports are named, not just a bare
+`REDUCE`. `safetensors`/ONNX/GGUF are reported safe-by-design.
+
 ```bash
 # Scan a model directory/file for unsafe pickle opcodes and risky imports
 python scripts/model_supply_chain.py --path ./models/model.pt
 python scripts/model_supply_chain.py --path ./models/ --recursive --output scan.json
+
+# Gate CI on findings (exit 3 if any DANGEROUS artifact); verify the detector first
+python scripts/model_supply_chain.py --path ./models/ --recursive --strict
+python scripts/model_supply_chain.py --demo        # self-test the opcode resolver
 ```
+
+| Verdict | Meaning |
+|---------|---------|
+| `DANGEROUS` | A dangerous `GLOBAL`/`STACK_GLOBAL` import (e.g. `os`, `posix.system`, `subprocess`) is present — do **not** load |
+| `review` | `REDUCE`/object-construction opcodes or an unresolved global — inspect before loading |
+| `safe` | Safe-by-design format (safetensors/ONNX/GGUF) |
 
 ---
 

@@ -121,43 +121,44 @@ class PCAPAnalyzer:
             "suspicious": suspicious,
         }
 
+    @staticmethod
+    def score_beacon(ip: str, times: List[float], threshold_count: int = 10) -> Dict:
+        """Score one destination's timestamps for beaconing regularity.
+
+        Pure function (no scapy) so the detection logic is unit-testable. Times
+        are sorted first — capture order is not guaranteed monotonic, and an
+        out-of-order list would otherwise yield bogus negative intervals.
+        """
+        if len(times) < threshold_count:
+            return {}
+        times = sorted(times)
+        intervals = [times[i + 1] - times[i] for i in range(len(times) - 1)]
+        if not intervals:
+            return {}
+        avg_interval = sum(intervals) / len(intervals)
+        if avg_interval <= 0:
+            return {}
+        variance = sum((i - avg_interval) ** 2 for i in intervals) / len(intervals)
+        jitter = (variance ** 0.5) / avg_interval
+        if jitter < 0.3 and avg_interval > 1:  # low jitter + steady cadence = beaconing
+            return {
+                "destination_ip": ip,
+                "connection_count": len(times),
+                "avg_interval_seconds": round(avg_interval, 2),
+                "jitter_ratio": round(jitter, 4),
+                "confidence": "HIGH" if jitter < 0.1 else "MEDIUM",
+            }
+        return {}
+
     def detect_beaconing(self, threshold_count: int = 10) -> List[Dict]:
         """Detect beaconing patterns (regular interval callbacks)."""
         ip_timestamps = defaultdict(list)
-
         for pkt in self.packets:
             if pkt.haslayer(IP) and pkt.haslayer(TCP):
-                dst = pkt[IP].dst
-                ip_timestamps[dst].append(float(pkt.time))
+                ip_timestamps[pkt[IP].dst].append(float(pkt.time))
 
-        beacons = []
-        for ip, times in ip_timestamps.items():
-            if len(times) < threshold_count:
-                continue
-
-            intervals = [times[i+1] - times[i] for i in range(len(times)-1)]
-            if not intervals:
-                continue
-
-            avg_interval = sum(intervals) / len(intervals)
-            if avg_interval == 0:
-                continue
-
-            # Check for regularity (low standard deviation)
-            variance = sum((i - avg_interval) ** 2 for i in intervals) / len(intervals)
-            std_dev = variance ** 0.5
-
-            jitter = std_dev / avg_interval if avg_interval > 0 else 999
-
-            if jitter < 0.3 and avg_interval > 1:  # Low jitter = likely beaconing
-                beacons.append({
-                    "destination_ip": ip,
-                    "connection_count": len(times),
-                    "avg_interval_seconds": round(avg_interval, 2),
-                    "jitter_ratio": round(jitter, 4),
-                    "confidence": "HIGH" if jitter < 0.1 else "MEDIUM",
-                })
-
+        beacons = [b for ip, times in ip_timestamps.items()
+                   if (b := self.score_beacon(ip, times, threshold_count))]
         return sorted(beacons, key=lambda x: x["jitter_ratio"])
 
     def detect_port_scanning(self) -> List[Dict]:
@@ -210,20 +211,48 @@ class PCAPAnalyzer:
         return self.results
 
 
+def _run_demo() -> int:
+    """Offline self-test of the beaconing scorer (no scapy / PCAP needed)."""
+    # Perfectly periodic callbacks every 60s -> beacon; jittery/sparse -> not.
+    periodic = [1000.0 + 60 * i for i in range(20)]
+    # Out-of-order copy must give the same verdict (regression for the sort fix).
+    shuffled = periodic[::-1]
+    jittery = [1000.0, 1003.0, 1050.0, 1120.0, 1500.0, 2000.0, 2001.0, 3000.0, 3600.0, 4000.0, 9000.0]
+    checks = [
+        ("periodic detected as beacon", bool(PCAPAnalyzer.score_beacon("1.2.3.4", periodic))),
+        ("out-of-order still detected", bool(PCAPAnalyzer.score_beacon("1.2.3.4", shuffled))),
+        ("high confidence on zero jitter",
+         PCAPAnalyzer.score_beacon("1.2.3.4", periodic).get("confidence") == "HIGH"),
+        ("jittery not flagged", not PCAPAnalyzer.score_beacon("1.2.3.4", jittery)),
+        ("too-few samples ignored", not PCAPAnalyzer.score_beacon("1.2.3.4", periodic[:5])),
+    ]
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="PCAP Network Traffic Analyzer",
         epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill",
     )
-    parser.add_argument("--file", "-f", required=True, help="PCAP file to analyze")
+    parser.add_argument("--file", "-f", help="PCAP file to analyze")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
     parser.add_argument("--dns", action="store_true", default=True, help="Include DNS analysis")
     parser.add_argument("--top-talkers", type=int, default=10, help="Number of top talkers (default: 10)")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.file:
+        parser.error("--file/-f is required (or use --demo)")
 
     analyzer = PCAPAnalyzer(args.file)
     results = analyzer.run(include_dns=args.dns, top_n=args.top_talkers)

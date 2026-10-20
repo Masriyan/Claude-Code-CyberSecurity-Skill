@@ -9,24 +9,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Reproducible `make check`, pytest regression suite, Ruff correctness checks, scoped
-  Bandit gate, and Python 3.10/3.12 GitHub Actions with a legacy security-scan artifact.
-- Shared IOC refanging/STIX export and versioned file-provenance schema/CLI.
-- Evidence contract distinguishing observed, inferred, and unverified findings in all 22 skills.
+_Nothing yet._
 
-### Fixed
-- Actual marketplace membership (20 entries) now matches the 22 on-disk skills.
-- Agent Skills-compatible names and string metadata; draft version aligned at 3.2.0.
-- CTI extraction confidence no longer implies maliciousness or MISP detection readiness.
-- STIX UUIDs, SCO objects, hash names, and TLP 2.0 statement markings.
-- Refanging before IOC matching, URL path/query case preservation, text-only input diagnostics.
-- DNS CLI help available without dnspython; strict purple-team result validation.
-- Threat-hunting examples now use supported CLI arguments; configurable Navigator ATT&CK version.
+---
+
+## [3.3.0] — 2026-10-20
+
+A correctness, robustness, and documentation pass over all 22 skills and every
+shipped automation script. No skill scope removed; all authorization/safety gates
+(Skills 03, 14, 16, 18, 22) preserved.
+
+### Added
+- **Offline `--demo` self-test on every shipped script (~35).** Each runs fully
+  offline and asserts real detections/logic — not merely that the CLI starts —
+  so `make`-style smoke tests catch regressions in behavior, not just syntax.
+- **Skill 19 `control_mapper.py`** crosswalk expanded from 8 to **15 control
+  domains** (adds network security, backup & recovery, security awareness, secure
+  development, asset management, physical security) across NIST CSF 2.0 /
+  ISO 27001:2022 / SOC 2 / NIST SP 800-53r5 / CIS v8 / PCI DSS 4.0.
+- **Skill 03 `payload_generator.py`** implements the previously-advertised-but-
+  missing `bind_shell` and `cmd_exec` payload types and adds a `powershell -enc`
+  (base64 UTF-16LE) reverse-shell variant. Authorization gate preserved.
+- **Skill 16 `model_supply_chain.py`** `--strict` flag for CI gating on findings.
+- **Skill 02 `cvss_calculator.py`** regression self-test pinned to canonical FIRST
+  CVSS v3.1 reference scores.
+- `NOTICE` file mandating attribution preservation in redistributions; explicit
+  `SPDX-License-Identifier` and full copyright (2025–2026 Riyan Pratama) in `LICENSE`.
+- (carried from the prior unreleased cycle) Reproducible `make check`, pytest
+  regression suite, Ruff correctness checks, scoped Bandit gate, Python 3.10/3.12
+  CI; shared IOC refang/STIX export and a versioned provenance schema/CLI; and an
+  evidence contract distinguishing observed/inferred/unverified findings in all 22 skills.
+
+### Fixed — correctness
+- **Skill 16 `model_supply_chain.py`** resolves `STACK_GLOBAL` (pickle protocol ≥4,
+  used by modern PyTorch/transformers checkpoints) so dangerous imports such as
+  `posix.system` are named, not hidden behind a bare `REDUCE`.
+- **Skill 16 `prompt_injection_tester.py`** judge no longer scores a refusal (e.g.
+  "I cannot reveal my system prompt") as SUCCESS: canary echo is authoritative,
+  explicit refusals outrank weak leak phrases, mixed signals are PARTIAL.
+- **Skill 17 `apk_analyzer.py`** reports only genuinely exported components (parses
+  `android:exported` and implicit-export rules for targetSdk < 31) instead of
+  labelling every component exported; dedupes secret hits.
+- **Skill 18 `ics_protocol_analyzer.py`** control-op detection is function-code
+  precise: Modbus write FCs (incl. 22/23), S7comm state-changing functions (benign
+  Read Var excluded), and DNP3 Select/Operate/Direct Operate/Cold+Warm Restart.
+- **Skill 20 `supply_chain_auditor.py`** no longer false-flags `docker://…@sha256:`
+  digest-pinned GitHub Action steps as unpinned.
+- **Skill 19 `risk_register.py`** clamps likelihood/impact to the assumed 1–5 scale.
+- **Skill 01 `subdomain_enum.py`** suppresses wildcard-DNS false positives (brute-force
+  hits resolving only to the wildcard IP are dropped).
+- **Skill 02 `dependency_auditor.py`** no longer aborts at import when `requests` is
+  missing (so `--help` works); `total_packages_scanned` counts every ecosystem, not just PyPI.
+- **Skill 02 `config_auditor.py`** weak-TLS check flags TLSv1.1 (RFC 8996) and no longer
+  false-positives a hardened `TLSv1.2 TLSv1.3` line.
+- **Skill 04 `binary_analyzer.py`** Full-RELRO detection fixed — was testing the wrong
+  section flag and effectively never reported Full RELRO; now derived from `BIND_NOW`.
+- **Skill 05 `static_analyzer.py`** extracts URL/IP/email IOCs embedded *within* larger
+  strings (was anchored with `re.match`, so embedded C2 URLs were missed).
+- **Skill 08 `pcap_analyzer.py`** beaconing detection sorts timestamps before computing
+  intervals (capture order is not guaranteed monotonic).
+- **Skill 10 `iac_scanner.py`** scans a single file (not only directories); Dockerfile
+  DF-002 no longer false-flags pinned images (`FROM ubuntu:20.04`) and handles
+  multi-stage build aliases.
+- **Skill 12 `log_parser.py`** auth-log enrichment now runs in auto-detect mode (syslog
+  and auth_log share a regex); classification also inspects the daemon name (sudo/sshd).
+- **Skill 15 `hardening_checker.py`** SSH checks strip commented lines before matching,
+  so a stock `#PermitRootLogin no` is no longer a false PASS; accepts `prohibit-password`.
+
+### Security
+- **Skill 07 `timeline_builder.py`** HTML report now escapes all log-derived fields —
+  previously, malicious log content could inject stored XSS into the analyst's report.
+  Also drops deprecated `utcfromtimestamp` and normalizes tz-aware timestamps to UTC.
+- **Skills 09 (`owasp_scanner.py`, `api_security_tester.py`) and 01 (`tech_fingerprint.py`)**
+  verify TLS certificates by default, with an explicit `--insecure` opt-out (previously
+  verification was silently disabled).
+- Authorization disclaimers in **Skills 03, 09, 10** moved to stderr so stdout stays
+  clean, machine-readable JSON.
+
+### Changed
+- Version aligned to **3.3.0** across all 22 `SKILL.md` files, the marketplace manifest,
+  `CONTRIBUTING.md`, and `tools/standardize_skills.py`.
+- Optional dependencies (`requests`, `pyyaml`, `dnspython`) are now deferred at import in
+  the affected scripts so `--help` and `--demo` work without them.
 
 ### Migration
 - Read [quality and migration notes](docs/QUALITY.md) for output changes, test scope,
   legacy limitations, and the remaining expansion/orchestration roadmap.
+- Downstream tools that parsed a script's stdout **and** relied on the disclaimer banner
+  appearing there should read it from stderr now; stdout is strictly report content.
 
 ---
 

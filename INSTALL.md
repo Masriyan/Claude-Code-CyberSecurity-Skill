@@ -1,6 +1,6 @@
 # Installation Guide
 
-Complete installation instructions for the **Claude Code CyberSecurity Skill Collection v3.1**.
+Complete installation instructions for the **Claude Code CyberSecurity Skill Collection v3.3**.
 
 ---
 

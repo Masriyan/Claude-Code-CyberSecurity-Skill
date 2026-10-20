@@ -5,7 +5,7 @@ description: IOC extraction, threat intelligence correlation, MITRE ATT&CK mappi
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, threat-hunting, ioc, mitre-attack, threat-intelligence, sigma,
     detection, siem

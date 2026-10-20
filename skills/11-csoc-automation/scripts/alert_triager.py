@@ -161,18 +161,50 @@ class AlertTriager:
         }
 
 
+def _run_demo() -> int:
+    """Offline self-test of classification, severity escalation, and SLA assignment."""
+    alerts = [
+        {"id": "A1", "title": "Ransomware detected on host", "severity": "HIGH",
+         "asset_criticality": "critical"},
+        {"id": "A2", "title": "Port scan from external IP", "severity": "LOW",
+         "asset_criticality": "low"},
+        {"id": "A3", "title": "Scheduled vulnerability scanner run", "severity": "MEDIUM",
+         "description": "test maintenance window"},
+    ]
+    out = AlertTriager().triage_batch(alerts)
+    t = {a["alert_id"]: a for a in out["triaged_alerts"]}
+    checks = [
+        ("ransomware → malware category", t["A1"]["category"] == "malware"),
+        ("critical asset escalates HIGH→CRITICAL", t["A1"]["adjusted_severity"] == "CRITICAL"),
+        ("CRITICAL SLA is 15 min", t["A1"]["sla_minutes"] == 15),
+        ("scan → reconnaissance", t["A2"]["category"] == "reconnaissance"),
+        ("scanner/test flagged likely FP", t["A3"]["false_positive_likelihood"] == "HIGH"),
+    ]
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="SOC Alert Triager",
         epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill",
     )
-    parser.add_argument("--alerts", "-a", required=True, help="JSON file with alerts to triage")
+    parser.add_argument("--alerts", "-a", help="JSON file with alerts to triage")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.alerts:
+        parser.error("--alerts/-a is required (or use --demo)")
 
     with open(args.alerts, "r") as f:
         alerts = json.load(f)

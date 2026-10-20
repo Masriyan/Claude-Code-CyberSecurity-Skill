@@ -15,6 +15,7 @@ Repository: https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill
 import argparse
 import json
 import logging
+import sys
 import time
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -135,13 +136,37 @@ def to_markdown(plan: dict) -> str:
     return "\n".join(out)
 
 
+def _run_demo() -> int:
+    """Offline self-test: plan structure and the authorization safety gate."""
+    default_plan = generate_plan({})
+    authorized_plan = generate_plan({"authorized": True, "name": "Op Test"})
+    md = to_markdown(default_plan)
+    checks = [
+        ("authorization defaults to False (template)", default_plan["authorization"]["authorized"] is False),
+        ("authorization section present", "authorization" in default_plan),
+        ("RoE lists prohibited techniques", "DoS/DDoS" in default_plan["rules_of_engagement"]["prohibited_techniques"]),
+        ("8 ATT&CK-aligned phases", len(default_plan["kill_chain_plan"]) == 8),
+        ("markdown renders authorization", "## Authorization" in md),
+        ("explicit authorized flag honored", authorized_plan["authorization"]["authorized"] is True),
+    ]
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(description="Red Team Engagement Planner (ATT&CK-aligned)",
                                      epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill")
     parser.add_argument("--scope", "-s", help="Scope JSON file")
     parser.add_argument("--output", "-o", help="Output file")
     parser.add_argument("--format", "-f", choices=["json", "markdown"], default="json")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     args = parser.parse_args()
+
+    if args.demo:
+        sys.exit(_run_demo())
 
     scope = {}
     if args.scope:

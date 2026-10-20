@@ -5,7 +5,7 @@ description: Network traffic analysis, PCAP parsing, IDS/IPS rule creation, fire
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, network, traffic-analysis, pcap, ids, ips, firewall, snort,
     suricata, zeek

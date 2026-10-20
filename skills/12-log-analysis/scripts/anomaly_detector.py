@@ -451,6 +451,18 @@ def main():
 
     print_summary(anomalies)
 
+    if args.demo:
+        # Turn the demo into a regression gate: the seeded events must trip the
+        # brute-force, privilege-escalation and after-hours detectors.
+        found = {a["type"] for a in anomalies}
+        expected = {"brute_force", "privilege_escalation", "after_hours_access"}
+        missing = expected - found
+        if missing:
+            print(f"[!] demo FAILED — detectors did not fire: {sorted(missing)}", file=sys.stderr)
+            sys.exit(1)
+        print("[+] demo passed — all seeded anomaly classes detected")
+        return
+
     if args.output:
         report = {
             "timestamp": datetime.now(timezone.utc).isoformat(),

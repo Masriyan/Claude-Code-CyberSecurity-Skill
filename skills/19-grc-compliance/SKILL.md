@@ -6,7 +6,7 @@ description: Governance, risk, and compliance — risk assessment and scoring, c
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, grc, compliance, risk-management, nist-csf, iso27001, soc2,
     cis-controls, audit, policy
@@ -154,15 +154,30 @@ python scripts/risk_register.py --input risks.yaml --output risk_register.json
 
 # Quantitative ALE view where SLE/ARO provided
 python scripts/risk_register.py --input risks.csv --quant --output register.json
+
+# Try it on a built-in sample register
+python scripts/risk_register.py --demo
 ```
+Likelihood/impact are clamped to the 1–5 scale (out-of-range inputs are logged
+and corrected) so severity bands and the 5×5 heat-map stay meaningful.
 
 ### `control_mapper.py`
+Curated starter crosswalk across **15 control domains** — access control, MFA,
+logging/monitoring, vulnerability management, incident response, data protection,
+change management, risk assessment, vendor risk, network security, backup &
+recovery, security awareness, secure development, asset management, physical
+security — mapping NIST CSF 2.0 ↔ ISO/IEC 27001:2022 ↔ SOC 2 ↔ NIST SP 800-53r5
+↔ CIS v8 ↔ PCI DSS 4.0. Validate against the authoritative standard before audit.
 ```bash
 # Crosswalk a control concept across frameworks
 python scripts/control_mapper.py --control "access control" --frameworks all
 
 # Show NIST CSF 2.0 -> ISO 27001 / SOC 2 mapping for a function
 python scripts/control_mapper.py --csf PR.AA --output crosswalk.json
+
+# List every available domain, or show a sample crosswalk
+python scripts/control_mapper.py --list
+python scripts/control_mapper.py --demo
 ```
 
 ---

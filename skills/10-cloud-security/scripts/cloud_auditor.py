@@ -189,43 +189,47 @@ class AWSAuditor:
                         "Enable versioning to protect against accidental deletion and ransomware."
                     )
 
+    @staticmethod
+    def analyze_security_group(sg: Dict) -> List[Dict[str, str]]:
+        """Return risk findings for one describe-security-groups entry.
+
+        Pure function (no AWS calls) so the 0.0.0.0/0 exposure logic is testable.
+        A rule opens a port when its from/to range covers it; proto '-1' = all.
+        """
+        findings: List[Dict[str, str]] = []
+        sg_id = sg.get("GroupId", "unknown")
+        sg_name = sg.get("GroupName", "unknown")
+        resource = f"SG: {sg_id} ({sg_name})"
+        for perm in sg.get("IpPermissions", []):
+            proto = perm.get("IpProtocol", "all")
+            from_port = perm.get("FromPort", 0)
+            to_port = perm.get("ToPort", 65535)
+            if not any(r.get("CidrIp") == "0.0.0.0/0" for r in perm.get("IpRanges", [])):
+                continue
+            if proto == "-1":
+                findings.append({"check": "SG-ALL-TRAFFIC-OPEN", "severity": "HIGH", "resource": resource,
+                                 "description": "Security group allows ALL traffic from 0.0.0.0/0.",
+                                 "remediation": "Restrict inbound rules to only required ports and protocols."})
+                continue
+            if from_port <= 22 <= to_port:
+                findings.append({"check": "SG-SSH-OPEN", "severity": "HIGH", "resource": resource,
+                                 "description": "Security group allows SSH (port 22) from 0.0.0.0/0.",
+                                 "remediation": "Restrict SSH to specific IPs or use SSM Session Manager."})
+            if from_port <= 3389 <= to_port:
+                findings.append({"check": "SG-RDP-OPEN", "severity": "HIGH", "resource": resource,
+                                 "description": "Security group allows RDP (port 3389) from 0.0.0.0/0.",
+                                 "remediation": "Restrict RDP to specific IP ranges or use a VPN."})
+        return findings
+
     def audit_ec2_security_groups(self) -> None:
         logger.info("Auditing EC2 security groups...")
         result = self._aws("ec2", "describe-security-groups")
         if "error" in result or "data" not in result:
             return
-
-        groups = result["data"].get("SecurityGroups", [])
-        for sg in groups:
-            sg_id = sg.get("GroupId", "unknown")
-            sg_name = sg.get("GroupName", "unknown")
-
-            for perm in sg.get("IpPermissions", []):
-                from_port = perm.get("FromPort", 0)
-                to_port = perm.get("ToPort", 65535)
-                proto = perm.get("IpProtocol", "all")
-
-                for ip_range in perm.get("IpRanges", []):
-                    cidr = ip_range.get("CidrIp", "")
-                    if cidr == "0.0.0.0/0":
-                        if from_port == 22 or (from_port <= 22 <= to_port):
-                            self.add_finding(
-                                "SG-SSH-OPEN", "HIGH", f"SG: {sg_id} ({sg_name})",
-                                f"Security group allows SSH (port 22) from 0.0.0.0/0.",
-                                "Restrict SSH access to specific IP ranges or use AWS Systems Manager Session Manager."
-                            )
-                        if from_port == 3389 or (from_port <= 3389 <= to_port):
-                            self.add_finding(
-                                "SG-RDP-OPEN", "HIGH", f"SG: {sg_id} ({sg_name})",
-                                f"Security group allows RDP (port 3389) from 0.0.0.0/0.",
-                                "Restrict RDP access to specific IP ranges or use a VPN."
-                            )
-                        if proto == "-1":
-                            self.add_finding(
-                                "SG-ALL-TRAFFIC-OPEN", "HIGH", f"SG: {sg_id} ({sg_name})",
-                                f"Security group allows ALL traffic from 0.0.0.0/0.",
-                                "Restrict inbound rules to only required ports and protocols."
-                            )
+        for sg in result["data"].get("SecurityGroups", []):
+            for f in self.analyze_security_group(sg):
+                self.add_finding(f["check"], f["severity"], f["resource"],
+                                 f["description"], f["remediation"])
 
     def audit_cloudtrail(self) -> None:
         logger.info("Auditing CloudTrail...")
@@ -263,7 +267,7 @@ class AWSAuditor:
                 )
 
     def run(self) -> List[Dict]:
-        print(DISCLAIMER)
+        print(DISCLAIMER, file=sys.stderr)
         logger.info("Starting AWS audit (profile=%s, region=%s)", self.profile, self.region)
         self.audit_iam()
         self.audit_s3()
@@ -347,7 +351,7 @@ class GCPAuditor:
                         )
 
     def run(self) -> List[Dict]:
-        print(DISCLAIMER)
+        print(DISCLAIMER, file=sys.stderr)
         logger.info("Starting GCP audit (project=%s)", self.project)
         self.audit_iam_bindings()
         self.audit_storage_buckets()
@@ -427,7 +431,7 @@ class AzureAuditor:
                         )
 
     def run(self) -> List[Dict]:
-        print(DISCLAIMER)
+        print(DISCLAIMER, file=sys.stderr)
         logger.info("Starting Azure audit (subscription=%s)", self.subscription)
         self.audit_security_center()
         self.audit_network_security_groups()
@@ -463,6 +467,31 @@ def print_summary(provider: str, findings: List[Dict]) -> None:
                 print()
 
 
+def _run_demo() -> int:
+    """Offline self-test of the security-group exposure analyzer (no cloud calls)."""
+    open_ssh = {"GroupId": "sg-1", "GroupName": "web", "IpPermissions": [
+        {"IpProtocol": "tcp", "FromPort": 22, "ToPort": 22, "IpRanges": [{"CidrIp": "0.0.0.0/0"}]}]}
+    open_all = {"GroupId": "sg-2", "GroupName": "bad", "IpPermissions": [
+        {"IpProtocol": "-1", "IpRanges": [{"CidrIp": "0.0.0.0/0"}]}]}
+    restricted = {"GroupId": "sg-3", "GroupName": "ok", "IpPermissions": [
+        {"IpProtocol": "tcp", "FromPort": 22, "ToPort": 22, "IpRanges": [{"CidrIp": "10.0.0.0/8"}]}]}
+    wide = {"GroupId": "sg-4", "GroupName": "range", "IpPermissions": [
+        {"IpProtocol": "tcp", "FromPort": 1, "ToPort": 4000, "IpRanges": [{"CidrIp": "0.0.0.0/0"}]}]}
+    a = AWSAuditor.analyze_security_group
+    checks = [
+        ("open SSH flagged", any(f["check"] == "SG-SSH-OPEN" for f in a(open_ssh))),
+        ("all-traffic flagged", any(f["check"] == "SG-ALL-TRAFFIC-OPEN" for f in a(open_all))),
+        ("restricted CIDR not flagged", a(restricted) == []),
+        ("wide port range covers SSH+RDP",
+         {f["check"] for f in a(wide)} == {"SG-SSH-OPEN", "SG-RDP-OPEN"}),
+    ]
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Cloud Security Auditor — AWS / Azure / GCP",
@@ -474,14 +503,20 @@ def main():
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--provider", required=True, choices=["aws", "azure", "gcp"],
+    parser.add_argument("--provider", choices=["aws", "azure", "gcp"],
                         help="Cloud provider to audit")
     parser.add_argument("--profile", help="AWS CLI profile name")
     parser.add_argument("--region", default="us-east-1", help="AWS region (default: us-east-1)")
     parser.add_argument("--project", help="GCP project ID")
     parser.add_argument("--subscription", help="Azure subscription ID")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     args = parser.parse_args()
+
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.provider:
+        parser.error("--provider is required (or use --demo)")
 
     findings: List[Dict] = []
 

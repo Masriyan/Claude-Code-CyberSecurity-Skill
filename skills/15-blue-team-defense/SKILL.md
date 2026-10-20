@@ -5,7 +5,7 @@ description: System hardening, detection engineering, security baseline monitori
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, blue-team, defense, hardening, detection, baseline, siem, endpoint,
     cis

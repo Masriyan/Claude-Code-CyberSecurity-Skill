@@ -7,7 +7,7 @@ description: Collaborative purple-team operations — threat-informed adversary 
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, purple-team, adversary-emulation, attack, atomic-red-team,
     caldera, detection-engineering, detection-coverage, mttd, breach-attack-simulation

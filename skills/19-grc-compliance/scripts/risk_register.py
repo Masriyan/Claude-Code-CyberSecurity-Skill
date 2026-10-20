@@ -19,12 +19,15 @@ Usage:
 import argparse
 import csv
 import json
+import logging
 import sys
 
 try:
     import yaml  # type: ignore
 except ImportError:
     yaml = None
+
+logger = logging.getLogger("risk_register")
 
 
 def severity(score: int) -> str:
@@ -61,9 +64,20 @@ def num(v, default=0.0):
         return default
 
 
+def _clamp_1_5(value, field: str, risk_id: str) -> int:
+    """Clamp a likelihood/impact value to the 1-5 scale the bands assume."""
+    raw = int(num(value, 1))
+    clamped = min(max(raw, 1), 5)
+    if raw != clamped:
+        logger.warning("risk %s: %s=%s out of 1-5 range, clamped to %d",
+                       risk_id or "?", field, raw, clamped)
+    return clamped
+
+
 def score_risk(r: dict, quant: bool) -> dict:
-    like = int(num(r.get("likelihood"), 1))
-    imp = int(num(r.get("impact"), 1))
+    rid = r.get("id", "")
+    like = _clamp_1_5(r.get("likelihood"), "likelihood", rid)
+    imp = _clamp_1_5(r.get("impact"), "impact", rid)
     inherent = like * imp
     eff = num(r.get("control_effectiveness"), 0.0)  # 0..1
     eff = min(max(eff, 0.0), 1.0)
@@ -108,14 +122,38 @@ def heatmap(rows: list[dict]) -> str:
     return "\n".join(lines)
 
 
+_DEMO_RISKS = [
+    {"id": "R-01", "risk": "Ransomware via phishing", "asset": "Endpoints",
+     "likelihood": 4, "impact": 5, "control_effectiveness": 0.5,
+     "treatment": "mitigate", "owner": "CISO", "due": "2026-Q1",
+     "sle": 500000, "aro": 0.4},
+    {"id": "R-02", "risk": "Cloud bucket misconfiguration", "asset": "S3",
+     "likelihood": 3, "impact": 4, "control_effectiveness": 0.7,
+     "sle": 200000, "aro": 0.2},
+    {"id": "R-03", "risk": "Insider data theft", "asset": "CRM",
+     "likelihood": 2, "impact": 5, "control_effectiveness": 0.3},
+]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Score and rank an information-security risk register")
-    ap.add_argument("--input", required=True, help="risks.yaml or risks.csv")
+    ap.add_argument("--input", help="risks.yaml or risks.csv")
     ap.add_argument("--quant", action="store_true", help="Compute ALE (needs sle, aro)")
+    ap.add_argument("--demo", action="store_true", help="Score a built-in sample register")
     ap.add_argument("--output", help="Write JSON register")
+    ap.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
     args = ap.parse_args()
 
-    raw = load(args.input)
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.WARNING,
+                        format="%(levelname)s %(name)s: %(message)s")
+
+    if args.demo:
+        raw = _DEMO_RISKS
+        args.quant = True
+    elif args.input:
+        raw = load(args.input)
+    else:
+        ap.error("--input is required (or use --demo)")
     rows = [score_risk(r, args.quant) for r in raw]
     rows.sort(key=lambda x: x["residual"], reverse=True)
 

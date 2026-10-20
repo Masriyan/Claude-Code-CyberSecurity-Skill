@@ -49,22 +49,31 @@ SQLI_PAYLOADS = ["'", "' OR '1'='1", "\" OR \"1\"=\"1", "1; DROP TABLE--", "' UN
 class OWASPScanner:
     """Basic OWASP Top 10 web vulnerability scanner."""
 
-    def __init__(self, base_url: str, timeout: int = 10):
+    def __init__(self, base_url: str, timeout: int = 10, verify: bool = True):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.session = requests.Session()
         self.session.headers["User-Agent"] = "CyberSkill-Scanner/1.0"
-        self.session.verify = False
+        # Verify TLS by default; --insecure opts out for self-signed/internal targets.
+        self.session.verify = verify
         self.findings: List[Dict] = []
+
+    @staticmethod
+    def missing_security_headers(headers: Dict[str, str]) -> List[Dict]:
+        """Return findings for absent security headers (case-insensitive). Pure/testable."""
+        present = {k.lower() for k in headers}
+        findings = []
+        for header, info in SECURITY_HEADERS.items():
+            if header.lower() not in present:
+                findings.append({"category": "A05-Security-Misconfiguration", "severity": info["severity"],
+                                 "title": f"Missing header: {header}", "description": info["description"]})
+        return findings
 
     def check_security_headers(self) -> None:
         logger.info("[A05] Checking security headers...")
         try:
             resp = self.session.get(self.base_url, timeout=self.timeout)
-            for header, info in SECURITY_HEADERS.items():
-                if header.lower() not in {k.lower(): v for k, v in resp.headers.items()}:
-                    self.findings.append({"category": "A05-Security-Misconfiguration", "severity": info["severity"],
-                                         "title": f"Missing header: {header}", "description": info["description"]})
+            self.findings.extend(self.missing_security_headers(dict(resp.headers)))
             # Check for server version disclosure
             if "Server" in resp.headers:
                 server = resp.headers["Server"]
@@ -141,19 +150,49 @@ class OWASPScanner:
                 "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
 
 
+def _run_demo() -> int:
+    """Offline self-test of the header analyzer (no network)."""
+    none_present = OWASPScanner.missing_security_headers({"Server": "nginx"})
+    all_present = OWASPScanner.missing_security_headers(
+        {h: "x" for h in SECURITY_HEADERS})
+    partial = OWASPScanner.missing_security_headers(
+        {"strict-transport-security": "max-age=31536000"})  # lowercase key
+    checks = [
+        ("no headers → all flagged", len(none_present) == len(SECURITY_HEADERS)),
+        ("all headers → none flagged", all_present == []),
+        ("case-insensitive match", not any(f["title"].endswith("Strict-Transport-Security")
+                                           for f in partial)),
+    ]
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(description="OWASP Web Security Scanner",
                                      epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill")
-    parser.add_argument("--url", "-u", required=True, help="Target URL")
+    parser.add_argument("--url", "-u", help="Target URL")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
     parser.add_argument("--tests", help="Comma-separated test IDs (e.g., a01,a02,a05)")
+    parser.add_argument("--insecure", action="store_true",
+                        help="Disable TLS certificate verification (self-signed/internal targets)")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.url:
+        parser.error("--url/-u is required (or use --demo)")
+    if not HAS_REQUESTS:
+        parser.error("requests library required: pip install requests")
+
     tests = args.tests.split(",") if args.tests else None
-    scanner = OWASPScanner(args.url)
+    scanner = OWASPScanner(args.url, verify=not args.insecure)
     results = scanner.run(tests=tests)
 
     if args.output:

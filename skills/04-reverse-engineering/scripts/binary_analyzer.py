@@ -231,18 +231,24 @@ class BinaryAnalyzer:
         if elf.header.e_type == "ET_DYN":
             security["PIE"] = True
 
-        # NX/DEP check
+        # NX/DEP check. If there is no PT_GNU_STACK, the loader applies its
+        # default (non-executable stack on modern toolchains), so treat the
+        # absence as NX enabled.
+        has_gnu_stack = False
+        has_relro_segment = False
         for segment in elf.iter_segments():
             if segment["p_type"] == "PT_GNU_STACK":
-                security["NX"] = not bool(segment["p_flags"] & 0x1)
+                has_gnu_stack = True
+                security["NX"] = not bool(segment["p_flags"] & 0x1)  # PF_X
             if segment["p_type"] == "PT_GNU_RELRO":
-                security["RELRO"] = "Partial"
+                has_relro_segment = True
+        if not has_gnu_stack:
+            security["NX"] = True
 
-        # Full RELRO check
-        for section in elf.iter_sections():
-            if section.name == ".got.plt":
-                if section["sh_flags"] & 0x2 == 0:
-                    security["RELRO"] = "Full"
+        # RELRO: Partial = PT_GNU_RELRO present; Full = also linked with BIND_NOW
+        # (DT_BIND_NOW, or DT_FLAGS & DF_BIND_NOW, or DT_FLAGS_1 & DF_1_NOW).
+        if has_relro_segment:
+            security["RELRO"] = "Full" if self._elf_bind_now(elf) else "Partial"
 
         # Stack canary check (look for __stack_chk_fail)
         for section in elf.iter_sections():
@@ -252,6 +258,28 @@ class BinaryAnalyzer:
                         security["Stack_Canary"] = True
 
         return security
+
+    @staticmethod
+    def _elf_bind_now(elf) -> bool:
+        """True if the ELF is linked with BIND_NOW (required for Full RELRO)."""
+        DF_BIND_NOW = 0x8
+        DF_1_NOW = 0x1
+        try:
+            from elftools.elf.dynamic import DynamicSection
+        except ImportError:
+            return False
+        for section in elf.iter_sections():
+            if not isinstance(section, DynamicSection):
+                continue
+            for tag in section.iter_tags():
+                entry = tag.entry.d_tag
+                if entry == "DT_BIND_NOW":
+                    return True
+                if entry == "DT_FLAGS" and (tag.entry.d_val & DF_BIND_NOW):
+                    return True
+                if entry == "DT_FLAGS_1" and (tag.entry.d_val & DF_1_NOW):
+                    return True
+        return False
 
     def analyze_pe(self) -> Dict[str, Any]:
         """Analyze PE binary."""
@@ -342,22 +370,64 @@ class BinaryAnalyzer:
         return results
 
 
+def _run_demo() -> int:
+    """Offline self-test: entropy bounds, magic-byte typing, and string extraction."""
+    import tempfile
+    checks = []
+    # Shannon entropy bounds: single repeated byte -> 0.0; all 256 values -> 8.0.
+    with tempfile.TemporaryDirectory() as d:
+        zero = os.path.join(d, "zero.bin")
+        with open(zero, "wb") as f:
+            f.write(b"\x7fELF" + b"A" * 4096)  # ELF magic + low-entropy body
+        a = BinaryAnalyzer(zero)
+        checks.append(("ELF magic detected", a.file_type == "ELF"))
+        checks.append(("low-entropy < 2.0", a.calculate_entropy()["overall_entropy"] < 2.0))
+
+        high = os.path.join(d, "high.bin")
+        with open(high, "wb") as f:
+            f.write(bytes(range(256)) * 16)  # uniform -> entropy == 8.0
+        b = BinaryAnalyzer(high)
+        ent = b._shannon_entropy(bytes(range(256)))
+        checks.append(("uniform entropy == 8.0", abs(ent - 8.0) < 1e-9))
+        checks.append(("empty entropy == 0.0", b._shannon_entropy(b"") == 0.0))
+
+        strs = os.path.join(d, "s.bin")
+        with open(strs, "wb") as f:
+            f.write(b"MZ\x00\x00http://evil.test/c2\x00password=hunter2\x00")
+        c = BinaryAnalyzer(strs)
+        checks.append(("PE magic detected", c.file_type == "PE"))
+        extracted = c.extract_strings()
+        checks.append(("URL extracted", any("evil.test" in u for u in extracted["urls"])))
+        checks.append(("interesting kw found", any("password" in s for s in extracted["interesting"])))
+
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Binary Analyzer — Static Analysis Tool",
         epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill",
     )
-    parser.add_argument("--file", "-f", required=True, help="Binary file to analyze")
+    parser.add_argument("--file", "-f", help="Binary file to analyze")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
     parser.add_argument("--strings", action="store_true", default=True, help="Extract strings")
     parser.add_argument("--entropy", action="store_true", default=True, help="Calculate entropy")
     parser.add_argument("--no-strings", action="store_true", help="Skip string extraction")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.file:
+        parser.error("--file/-f is required (or use --demo)")
     if not os.path.exists(args.file):
         logger.error("File not found: %s", args.file)
         sys.exit(1)

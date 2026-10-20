@@ -8,13 +8,14 @@ Repository: https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill
 
 import argparse
 import csv
+import html
 import json
 import logging
 import os
 import re
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 logging.basicConfig(
@@ -84,7 +85,7 @@ class TimelineBuilder:
                 ts_str = match.group(1)
                 try:
                     if fmt == "epoch":
-                        dt = datetime.utcfromtimestamp(int(ts_str))
+                        dt = datetime.fromtimestamp(int(ts_str), tz=timezone.utc)
                     else:
                         # Handle timezone-aware timestamps
                         ts_clean = re.sub(r"[Z]$", "+00:00", ts_str)
@@ -92,6 +93,13 @@ class TimelineBuilder:
                             dt = datetime.fromisoformat(ts_clean)
                         except (ValueError, AttributeError):
                             dt = datetime.strptime(ts_str.split(".")[0], fmt.split(".")[0])
+                            # Yearless formats (e.g. syslog) default to 1900; assume
+                            # the current year so events sort correctly.
+                            if "%Y" not in fmt and "%y" not in fmt:
+                                dt = dt.replace(year=datetime.now(timezone.utc).year)
+                    # Normalize tz-aware timestamps to UTC so the trailing 'Z' is honest.
+                    if dt.tzinfo is not None:
+                        dt = dt.astimezone(timezone.utc)
                     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
                 except (ValueError, OSError):
                     continue
@@ -184,15 +192,21 @@ class TimelineBuilder:
         rows = ""
         for event in self.events:
             color = severity_colors.get(event["severity"], "#6c757d")
+            # Escape all log-derived fields: raw log content is attacker-influenced
+            # and would otherwise allow stored XSS / log injection in the report.
+            ts = html.escape(str(event["timestamp"]))
+            sev = html.escape(str(event["severity"]))
+            src = html.escape(str(event["source"]))
+            evt = html.escape(str(event["event"])[:200])
             rows += f"""
             <tr>
-                <td>{event['timestamp']}</td>
-                <td><span style="color:{color};font-weight:bold">{event['severity']}</span></td>
-                <td>{event['source']}</td>
-                <td><code>{event['event'][:200]}</code></td>
+                <td>{ts}</td>
+                <td><span style="color:{color};font-weight:bold">{sev}</span></td>
+                <td>{src}</td>
+                <td><code>{evt}</code></td>
             </tr>"""
 
-        html = f"""<!DOCTYPE html>
+        html_doc = f"""<!DOCTYPE html>
 <html><head><title>Forensic Timeline</title>
 <style>
 body {{ font-family: 'Segoe UI', sans-serif; margin: 20px; background: #1a1a2e; color: #e0e0e0; }}
@@ -213,8 +227,49 @@ code {{ background: #111; padding: 2px 6px; border-radius: 3px; font-size: 0.85e
 </body></html>"""
 
         with open(filepath, "w") as f:
-            f.write(html)
+            f.write(html_doc)
         logger.info("[Export] HTML saved to %s", filepath)
+
+
+def _run_demo() -> int:
+    """Offline self-test: parse mixed-format log lines, classify, and order them."""
+    b = TimelineBuilder()
+    lines = [
+        "2026-01-02T10:00:05Z CRITICAL ransomware note dropped",
+        "2026-01-02 09:59:00 user login accepted",
+        "Jan  2 09:58:00 sshd: Failed password for root",
+        "<script>alert(1)</script> error denied at 2026-01-01T00:00:00Z",
+    ]
+    for ln in lines:
+        ts = b._extract_timestamp(ln)
+        if ts:
+            b.events.append({"timestamp": ts, "source": "demo", "line_number": 1,
+                             "event": ln, "severity": b._classify_severity(ln)})
+    b.build_timeline()
+    sev = {e["event"][:10]: e["severity"] for e in b.events}
+    checks = [
+        ("≥3 timestamps parsed", len(b.events) >= 3),
+        ("chronologically sorted", [e["timestamp"] for e in b.events] == sorted(e["timestamp"] for e in b.events)),
+        ("critical classified", any(e["severity"] == "CRITICAL" for e in b.events)),
+        ("severity for failed password is HIGH", any(e["severity"] == "HIGH" for e in b.events)),
+    ]
+    # HTML export must escape attacker-controlled log content.
+    import tempfile
+    with tempfile.NamedTemporaryFile("r+", suffix=".html", delete=False) as fh:
+        path = fh.name
+    try:
+        b.export_html(path)
+        with open(path, encoding="utf-8") as fh:
+            htmltext = fh.read()
+    finally:
+        os.unlink(path)
+    checks.append(("HTML escapes injected markup", "<script>alert(1)</script>" not in htmltext
+                   and "&lt;script&gt;" in htmltext))
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
 
 
 def main():
@@ -222,16 +277,22 @@ def main():
         description="Forensic Timeline Builder",
         epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill",
     )
-    parser.add_argument("--logs", "-l", required=True, help="Log file or directory")
-    parser.add_argument("--output", "-o", required=True, help="Output file path")
+    parser.add_argument("--logs", "-l", help="Log file or directory")
+    parser.add_argument("--output", "-o", help="Output file path")
     parser.add_argument("--format", "-f", choices=["csv", "json", "html"], default="csv")
     parser.add_argument("--start", help="Start time filter (YYYY-MM-DD or ISO 8601)")
     parser.add_argument("--end", help="End time filter (YYYY-MM-DD or ISO 8601)")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.logs or not args.output:
+        parser.error("--logs and --output are required (or use --demo)")
 
     builder = TimelineBuilder()
 

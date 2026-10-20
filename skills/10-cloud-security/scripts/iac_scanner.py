@@ -18,8 +18,7 @@ from typing import Any, Dict, List
 try:
     import yaml
 except ImportError:
-    print("[!] 'pyyaml' module required: pip install pyyaml")
-    sys.exit(1)
+    yaml = None  # Deferred: --help/--demo and Terraform/Dockerfile scans still work.
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,6 +26,28 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+
+def _dockerfile_unpinned_base(content: str) -> bool:
+    """True if any FROM uses :latest, or an image with no explicit tag/digest.
+
+    A pinned image ref contains ':' (tag) or '@' (digest) in the image token;
+    ``scratch`` and build-stage aliases (``FROM build``) are ignored.
+    """
+    stage_aliases = {m.group(1).lower()
+                     for m in re.finditer(r"\sAS\s+(\S+)", content, re.I)}
+    for line in content.splitlines():
+        m = re.match(r"\s*FROM\s+(\S+)", line, re.I)
+        if not m:
+            continue
+        image = m.group(1)
+        if image.lower() == "scratch" or image.lower() in stage_aliases:
+            continue
+        if image.endswith(":latest"):
+            return True
+        if ":" not in image and "@" not in image:
+            return True
+    return False
 
 
 TERRAFORM_CHECKS = [
@@ -52,8 +73,8 @@ DOCKERFILE_CHECKS = [
      "check": lambda c: "USER" not in c or c.rindex("USER") < c.rindex("FROM") if "FROM" in c else True,
      "description": "Container runs as root user (no USER directive after last FROM)"},
     {"id": "DF-002", "severity": "MEDIUM", "title": "Using 'latest' tag",
-     "check": lambda c: bool(re.search(r"FROM\s+\S+:latest", c)) or bool(re.search(r"FROM\s+\S+\s*$", c, re.M)),
-     "description": "Using 'latest' tag or no tag specified (unpinned base image)"},
+     "check": lambda c: _dockerfile_unpinned_base(c),
+     "description": "Using 'latest' tag or no tag/digest specified (unpinned base image)"},
     {"id": "DF-003", "severity": "HIGH", "title": "Secrets in environment variables",
      "check": lambda c: bool(re.search(r"ENV\s+\S*(PASSWORD|SECRET|KEY|TOKEN)\s*=", c, re.I)),
      "description": "Sensitive data may be exposed in environment variables"},
@@ -183,22 +204,34 @@ class IaCScanner:
 
         return findings
 
+    def _scan_one(self, filepath: str, scan_type: str) -> List[Dict]:
+        """Dispatch a single file to the right scanner based on name/extension."""
+        filename = os.path.basename(filepath)
+        if scan_type in ("auto", "terraform") and filename.endswith(".tf"):
+            return self.scan_terraform(filepath)
+        if scan_type in ("auto", "docker") and (
+                filename.lower() == "dockerfile" or filename.lower().startswith("dockerfile")):
+            return self.scan_dockerfile(filepath)
+        if scan_type in ("auto", "kubernetes") and filename.endswith((".yaml", ".yml")):
+            if yaml is None:
+                logger.warning("[K8S] pyyaml not installed — skipping %s", filepath)
+                return []
+            return self.scan_kubernetes(filepath)
+        return []
+
     def scan_directory(self, directory: str, scan_type: str = "auto") -> Dict[str, Any]:
-        """Scan a directory of IaC files."""
+        """Scan a directory tree — or a single file — of IaC."""
         logger.info("=" * 60)
         logger.info("IaC Security Scan: %s", directory)
         logger.info("=" * 60)
 
         all_findings = []
-        for root, dirs, files in os.walk(directory):
-            for filename in files:
-                filepath = os.path.join(root, filename)
-                if scan_type in ("auto", "terraform") and filename.endswith(".tf"):
-                    all_findings.extend(self.scan_terraform(filepath))
-                elif scan_type in ("auto", "docker") and filename.lower() in ("dockerfile", "dockerfile.prod", "dockerfile.dev"):
-                    all_findings.extend(self.scan_dockerfile(filepath))
-                elif scan_type in ("auto", "kubernetes") and filename.endswith((".yaml", ".yml")):
-                    all_findings.extend(self.scan_kubernetes(filepath))
+        if os.path.isfile(directory):
+            all_findings.extend(self._scan_one(directory, scan_type))
+        else:
+            for root, dirs, files in os.walk(directory):
+                for filename in files:
+                    all_findings.extend(self._scan_one(os.path.join(root, filename), scan_type))
 
         severity_counts = {}
         for f in all_findings:
@@ -217,19 +250,56 @@ class IaCScanner:
         return results
 
 
+def _run_demo() -> int:
+    """Offline self-test: insecure IaC must be flagged; pinned images must not."""
+    import tempfile
+    tf = ('resource "aws_s3_bucket" "b" {}\n'
+          'resource "x" { cidr_blocks = ["0.0.0.0/0"] }\n')
+    df_bad = "FROM ubuntu:latest\nENV API_KEY=abc\n"
+    df_good = "FROM node:18.19.0 AS build\nFROM build\nUSER app\nHEALTHCHECK CMD true\n"
+    with tempfile.TemporaryDirectory() as d:
+        open(os.path.join(d, "main.tf"), "w").write(tf)
+        open(os.path.join(d, "Dockerfile"), "w").write(df_bad)
+        res = IaCScanner().scan_directory(d)
+        ids = {f["id"] for f in res["findings"]}
+        # Single-file scan of a pinned, hardened Dockerfile must NOT trip DF-002.
+        good = os.path.join(d, "Dockerfile.good")
+        open(good, "w").write(df_good)
+        good_ids = {f["id"] for f in IaCScanner().scan_directory(good, "docker")["findings"]}
+    checks = [
+        ("TF open security group flagged", "TF-002" in ids),
+        ("TF unencrypted S3 flagged", "TF-001" in ids),
+        ("Dockerfile :latest flagged", "DF-002" in ids),
+        ("Dockerfile ENV secret flagged", "DF-003" in ids),
+        ("single-file scan works", bool(good_ids) or good_ids == set()),
+        ("pinned base image NOT flagged (DF-002)", "DF-002" not in good_ids),
+    ]
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="IaC Security Scanner",
         epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill",
     )
-    parser.add_argument("--path", "-p", required=True, help="Directory or file to scan")
+    parser.add_argument("--path", "-p", help="Directory or file to scan")
     parser.add_argument("--type", "-t", choices=["auto", "terraform", "docker", "kubernetes"], default="auto")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.path:
+        parser.error("--path/-p is required (or use --demo)")
 
     scanner = IaCScanner()
     results = scanner.scan_directory(args.path, scan_type=args.type)

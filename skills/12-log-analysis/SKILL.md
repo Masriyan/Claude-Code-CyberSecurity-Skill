@@ -6,7 +6,7 @@ description: Security log parsing, anomaly detection, SIEM query building, Sigma
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, log-analysis, siem, splunk, elastic, sentinel, sigma, anomaly-detection,
     correlation

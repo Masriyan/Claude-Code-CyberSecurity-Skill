@@ -206,18 +206,42 @@ class DNSRecon:
         return self.results
 
 
+def _run_demo() -> int:
+    """Offline self-test of SPF/DMARC parsing and the email-security assessment."""
+    rec = DNSRecon.__new__(DNSRecon)  # no resolver/network needed for pure parsers
+    spf = rec._parse_spf("v=spf1 include:_spf.google.com -all")
+    dmarc = rec._parse_dmarc("v=DMARC1; p=none; rua=mailto:dmarc@x.test")
+    checks = [
+        ("SPF version parsed", spf.get("version") == "v=spf1"),
+        ("SPF hard-fail all detected", spf.get("all_policy") == "-all"),
+        ("DMARC policy parsed", dmarc.get("p") == "none"),
+        ("DMARC rua parsed", dmarc.get("rua") == "mailto:dmarc@x.test"),
+    ]
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="DNS Reconnaissance Tool",
         epilog="https://github.com/Masriyan/Claude-Code-CyberSecurity-Skill",
     )
-    parser.add_argument("--domain", "-d", required=True, help="Target domain")
+    parser.add_argument("--domain", "-d", help="Target domain")
     parser.add_argument("--output", "-o", help="Output file (JSON)")
     parser.add_argument("--nameserver", "-n", help="Custom nameserver")
     parser.add_argument("--timeout", type=int, default=5, help="DNS timeout (default: 5)")
     parser.add_argument("--check-zone-transfer", action="store_true", default=True, help="Test zone transfers")
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
+
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.domain:
+        parser.error("--domain/-d is required (or use --demo)")
     if dns is None:
         parser.error("dnspython required: pip install dnspython")
 

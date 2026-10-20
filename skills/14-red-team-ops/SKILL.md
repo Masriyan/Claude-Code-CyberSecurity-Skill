@@ -5,7 +5,7 @@ description: Authorized red team engagement planning, C2 architecture design, at
 license: MIT
 compatibility: Claude Code; Python 3.10+; full plugin checkout for shared utilities
 metadata:
-  version: 3.2.0
+  version: 3.3.0
   author: Masriyan
   tags: cybersecurity, red-team, c2, lateral-movement, persistence, pentest, engagement,
     opsec

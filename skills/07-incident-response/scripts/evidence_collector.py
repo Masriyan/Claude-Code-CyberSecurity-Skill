@@ -276,23 +276,57 @@ class EvidenceCollector:
         logger.info("Total evidence items collected: %d", len(self.evidence_manifest))
 
 
+def _run_demo() -> int:
+    """Offline self-test of chain-of-custody and manifest logic (no system commands)."""
+    import tempfile
+    # Note: the demo never calls run() — that executes live system collection
+    # (process/network/SUID scans). It validates only the custody/manifest logic
+    # against synthetic evidence, entirely offline and instantly.
+    with tempfile.TemporaryDirectory() as d:
+        collector = EvidenceCollector(d, "full")
+        path = collector.save_evidence("00_demo", {"sample": "evidence", "value": 42})
+        custody = collector.evidence_manifest[-1]
+        recomputed = sha256_file(path)
+        tampered = path + ".tampered"
+        with open(path, "rb") as src, open(tampered, "wb") as dst:
+            dst.write(src.read() + b"\n# tampered")
+        checks = [
+            ("evidence file written", os.path.exists(path)),
+            ("custody has evidence_id", custody.get("evidence_id", "").startswith("EV-")),
+            ("custody sha256 matches file", custody.get("sha256") == recomputed and recomputed is not None),
+            ("tamper changes hash", sha256_file(tampered) != recomputed),
+            ("custody records collector", bool(custody.get("collected_by"))),
+        ]
+    ok = all(p for _, p in checks)
+    for label, p in checks:
+        print(f"  [{'OK' if p else 'FAIL'}] {label}")
+    print("[+] demo passed" if ok else "[!] demo FAILED")
+    return 0 if ok else 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Forensic Evidence Collector — IR Tool",
         epilog="IMPORTANT: Run with root/admin privileges for complete collection."
     )
-    parser.add_argument("--output", "-o", required=True, help="Output directory for evidence")
+    parser.add_argument("--output", "-o", help="Output directory for evidence")
     parser.add_argument(
         "--type", "-t",
         choices=["full", "volatile", "network", "filesystem", "logs"],
         default="full",
         help="Collection type (default: full)"
     )
+    parser.add_argument("--demo", action="store_true", help="Run an offline self-test and exit")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    if args.demo:
+        sys.exit(_run_demo())
+    if not args.output:
+        parser.error("--output/-o is required (or use --demo)")
 
     collector = EvidenceCollector(args.output, args.type)
     collector.run()
